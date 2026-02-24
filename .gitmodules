@@ -1,0 +1,3 @@
+\[submodule "libs/eurorack"\] path = libs/eurorack url = [https://github.com/pichenettes/eurorack.git](https://github.com/pichenettes/eurorack.git)
+
+\[submodule "libs/stmlib"\] path = libs/stmlib url = [https://github.com/pichenettes/stmlib.git](https://github.com/pichenettes/stmlib.git)
