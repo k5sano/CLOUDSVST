@@ -40,7 +40,18 @@ void CloudsEngine::init()
     p->trigger = false;
     p->gate = false;
 
-    prepareCallsPerBlock_ = 1;
+    // Init() 後 previous_playback_mode_ = PLAYBACK_MODE_LAST のため
+    // 最初の数ブロックは Process() がゼロ出力する。
+    // VCV Rack と同様に、Granular モードで空回しして状態を安定させる。
+    {
+        clouds::ShortFrame dummyIn[kBlockSize] = {};
+        clouds::ShortFrame dummyOut[kBlockSize] = {};
+        for (int i = 0; i < 10; ++i) {
+            processor_->Prepare();
+            processor_->Process(dummyIn, dummyOut, kBlockSize);
+        }
+    }
+
     initialised_ = true;
 }
 
@@ -92,41 +103,10 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
 
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
-        // DEBUG: Check state before processing
-        if (offset == 0)
-        {
-            DBG("CloudsEngine PRE: prepCalls=" + juce::String(prepareCallsPerBlock_)
-                + " trim=" + juce::String(inputTrim_)
-                + " gain=" + juce::String(outputGain_));
-        }
-
-        // ONE Prepare before Process (to init buffers)
+        // VCV Rack / ctag-tbd approach: Prepare 1回 → Process 1回
         processor_->Prepare();
-        // Process (this sets correlator_loaded_=false in Stretch mode)
         processor_->Process(inputFrames, outputFrames, kBlockSize);
-
-        // DEBUG: Check output after Process
-        if (offset == 0)
-        {
-            float maxOut = 0.0f;
-            float maxIn = 0.0f;
-            for (int i = 0; i < kBlockSize; ++i)
-            {
-                float a = std::abs(static_cast<float>(outputFrames[i].l));
-                float b = std::abs(static_cast<float>(inputFrames[i].l));
-                if (a > maxOut) maxOut = a;
-                if (b > maxIn) maxIn = b;
-            }
-            DBG("CloudsEngine POST: outMax=" + juce::String(maxOut)
-                + " inMax=" + juce::String(maxIn));
-        }
-
-        // Reset trigger after Process (Clouds convention)
         processor_->mutable_parameters()->trigger = false;
-        // Additional Prepare calls AFTER Process (for Stretch mode correlator)
-        // Process->Play sets correlator_loaded_=false, then Prepare runs LoadCorrelator + EvaluateSomeCandidates
-        for (int p = 1; p < prepareCallsPerBlock_; ++p)
-            processor_->Prepare();
 
         for (int i = 0; i < blockSize; ++i)
         {
@@ -167,7 +147,6 @@ void CloudsEngine::setPlaybackMode(int mode)
     if (processor_ && mode >= 0 && mode < clouds::PLAYBACK_MODE_LAST)
     {
         processor_->set_playback_mode(static_cast<clouds::PlaybackMode>(mode));
-        prepareCallsPerBlock_ = (mode == clouds::PLAYBACK_MODE_STRETCH) ? 64 : 1;
     }
 }
 

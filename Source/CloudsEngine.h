@@ -50,14 +50,13 @@ public:
 
 private:
     static constexpr size_t kLargeBufferSize = 118784;
-    static constexpr size_t kSmallBufferSize = 65535;
+    static constexpr size_t kSmallBufferSize = 65536 - 128;  // VCV Rack と同じ 65408
 
     std::unique_ptr<uint8_t[]> largeBuffer_;
     std::unique_ptr<uint8_t[]> smallBuffer_;
     std::unique_ptr<clouds::GranularProcessor> processor_;
 
     bool initialised_ = false;
-    int prepareCallsPerBlock_ = 1;
     float inputTrim_ = 0.5f;
     float outputGain_ = 1.6f;
 

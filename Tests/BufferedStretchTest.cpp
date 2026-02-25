@@ -7,7 +7,7 @@
 
 int main()
 {
-    std::cout << "=== Buffered Stretch Test ===" << std::endl;
+    std::cout << "=== Buffered Stretch Test (VCV Rack approach) ===" << std::endl;
 
     const size_t kLargeBufferSize = 118784;
     const size_t kSmallBufferSize = 65535;
@@ -40,9 +40,9 @@ int main()
     const int kBlockSize = 32;
     float phase = 0.0f;
 
-    // Fill buffer with 1000 blocks (about 1 second)
-    std::cout << "Processing 1000 blocks in Granular mode..." << std::endl;
-    for (int block = 0; block < 1000; ++block)
+    // Fill buffer with 500 blocks
+    std::cout << "Processing 500 blocks in Granular mode..." << std::endl;
+    for (int block = 0; block < 500; ++block)
     {
         float inL[kBlockSize], inR[kBlockSize];
         for (int i = 0; i < kBlockSize; ++i)
@@ -63,10 +63,12 @@ int main()
         }
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
+        // VCV Rack approach: single Prepare → Process
         processor.Prepare();
         processor.Process(inputFrames, outputFrames, kBlockSize);
+        processor.mutable_parameters()->trigger = false;
 
-        if (block % 200 == 0)
+        if (block % 100 == 0)
         {
             float maxOut = 0.0f;
             for (int i = 0; i < kBlockSize; ++i)
@@ -110,11 +112,10 @@ int main()
         }
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
-        // Prepare 1回 → Process → Prepare 63回
+        // VCV Rack approach: single Prepare → Process
         processor.Prepare();
         processor.Process(inputFrames, outputFrames, kBlockSize);
-        for (int pp = 1; pp < 64; ++pp)
-            processor.Prepare();
+        processor.mutable_parameters()->trigger = false;
 
         for (int i = 0; i < kBlockSize; ++i)
         {
@@ -137,9 +138,9 @@ int main()
     std::cout << "\nFinal maxOutput (Stretch): " << maxOutputStretch << std::endl;
 
     if (maxOutputStretch < 1.0f)
-        std::cout << "RESULT: Stretch mode produces NO output even after filling buffer" << std::endl;
+        std::cout << "RESULT: Stretch mode produces NO output" << std::endl;
     else
-        std::cout << "RESULT: Stretch mode works when buffer is pre-filled!" << std::endl;
+        std::cout << "RESULT: Stretch mode WORKS!" << std::endl;
 
     return 0;
 }
