@@ -3,6 +3,13 @@
 CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     : AudioProcessorEditor(&p), processorRef_(p)
 {
+    // Load background image from processor state
+    juce::File bgPath = processorRef_.getBackgroundImagePath();
+    if (bgPath.exists())
+    {
+        backgroundImage_ = juce::ImageFileFormat::loadFrom(bgPath);
+    }
+
     setSize(800, 520);  // Expanded width for meters, height for Row 4
 
     // Start timer for GUI updates (30fps)
@@ -39,6 +46,16 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     // --- Trigger button ---
     triggerButton_.setClickingTogglesState(false);
     addAndMakeVisible(triggerButton_);
+
+    // --- BG Image button ---
+    loadImageButton_.onClick = [this] { loadBackgroundImage(); };
+    addAndMakeVisible(loadImageButton_);
+
+    // --- Preset buttons ---
+    savePresetButton_.onClick = [this] { savePreset(); };
+    loadPresetButton_.onClick = [this] { loadPreset(); };
+    addAndMakeVisible(savePresetButton_);
+    addAndMakeVisible(loadPresetButton_);
 
     // --- Mode selector ---
     modeSelector_.addItemList({"Granular", "Stretch", "Looping Delay", "Spectral"}, 1);
@@ -146,9 +163,18 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour(0xff1a1a2e));
 
+    // Draw background image with 40% opacity
+    if (backgroundImage_.isValid())
+    {
+        g.setOpacity(0.4f);
+        g.drawImageWithin(backgroundImage_, 0, 0, getWidth(), getHeight(),
+                         juce::RectanglePlacement::stretchToFit);
+        g.setOpacity(1.0f);
+    }
+
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsVST b011", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsCOSMOS b012", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Credit
@@ -224,6 +250,13 @@ void CloudsVSTEditor::resized()
     freezeButton_.setBounds(row3.removeFromLeft(70).reduced(2));
     row3.removeFromLeft(6);
     triggerButton_.setBounds(row3.removeFromLeft(70).reduced(2));
+    row3.removeFromLeft(6);
+    loadImageButton_.setBounds(row3.removeFromLeft(80).reduced(2));
+
+    // Reserve right side for preset buttons
+    auto presetArea = row3.removeFromRight(170);
+    loadPresetButton_.setBounds(presetArea.removeFromLeft(80).reduced(2));
+    savePresetButton_.setBounds(presetArea.removeFromLeft(80).reduced(2));
 
     area.removeFromTop(8);
 
@@ -243,4 +276,81 @@ void CloudsVSTEditor::resized()
     auto gainSliderArea = totalGainArea.removeFromRight(50);
     inputGainLabel_.setBounds(gainSliderArea.removeFromTop(labelH));
     inputGainSlider_.setBounds(gainSliderArea.removeFromTop(knobH * 2 + labelH));
+}
+
+//==============================================================================
+void CloudsVSTEditor::loadBackgroundImage()
+{
+    fileChooser_ = std::make_unique<juce::FileChooser>(
+        "Select Background Image",
+        juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+        "*.jpg;*.jpeg;*.png;*.gif;*.bmp");
+
+    fileChooser_->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (file.existsAsFile())
+            {
+                backgroundImage_ = juce::ImageFileFormat::loadFrom(file);
+                processorRef_.setBackgroundImagePath(file);
+                repaint();
+            }
+        });
+}
+
+void CloudsVSTEditor::savePreset()
+{
+    fileChooser_ = std::make_unique<juce::FileChooser>(
+        "Save Preset",
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsCOSMOS.preset"),
+        "*.preset");
+
+    fileChooser_->launchAsync(juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
+        [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (!file.getFullPathName().isEmpty())
+            {
+                // Ensure .preset extension
+                juce::File targetFile = file.hasFileExtension("preset") ? file : file.withFileExtension("preset");
+
+                // Get current state
+                juce::MemoryBlock data;
+                processorRef_.getStateInformation(data);
+
+                // Write to file
+                targetFile.replaceWithData(data.getData(), data.getSize());
+            }
+        });
+}
+
+void CloudsVSTEditor::loadPreset()
+{
+    fileChooser_ = std::make_unique<juce::FileChooser>(
+        "Load Preset",
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsCOSMOS.preset"),
+        "*.preset");
+
+    fileChooser_->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (file.existsAsFile())
+            {
+                juce::MemoryBlock data;
+                if (file.loadFileAsData(data))
+                {
+                    processorRef_.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+
+                    // Reload background image if saved in state
+                    juce::File bgPath = processorRef_.getBackgroundImagePath();
+                    if (bgPath.exists())
+                    {
+                        backgroundImage_ = juce::ImageFileFormat::loadFrom(bgPath);
+                        repaint();
+                    }
+                }
+            }
+        });
 }

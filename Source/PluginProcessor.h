@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "CloudsVST b011"; }
+    const juce::String getName() const override { return "CloudsCOSMOS b012"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -35,6 +35,10 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts_; }
+
+    // Background image path (persistent state)
+    juce::File getBackgroundImagePath() const { return backgroundImagePath_; }
+    void setBackgroundImagePath(const juce::File& path) { backgroundImagePath_ = path; }
 
     // Meter values for GUI (atomic for lock-free read)
     std::atomic<float>& getMeterA() { return meterA_; }
@@ -78,6 +82,9 @@ private:
     // Real-time meter values (Peak level, 0.0 to 1.0)
     std::atomic<float> meterA_{0.f}, meterB_{0.f},
                        meterD_{0.f}, meterE_{0.f}, meterF_{0.f};
+
+    // Persistent state
+    juce::File backgroundImagePath_;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

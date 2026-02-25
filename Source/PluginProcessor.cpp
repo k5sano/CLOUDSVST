@@ -178,6 +178,11 @@ void CloudsVSTProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = apvts_.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
+
+    // Save background image path
+    if (backgroundImagePath_.exists())
+        xml->setAttribute("backgroundImagePath", backgroundImagePath_.getFullPathName());
+
     copyXmlToBinary(*xml, destData);
 }
 
@@ -188,6 +193,13 @@ void CloudsVSTProcessor::setStateInformation(const void* data, int sizeInBytes)
     {
         if (xmlState->hasTagName(apvts_.state.getType()))
             apvts_.replaceState(juce::ValueTree::fromXml(*xmlState));
+
+        // Restore background image path
+        if (xmlState->hasAttribute("backgroundImagePath"))
+        {
+            juce::String path = xmlState->getStringAttribute("backgroundImagePath");
+            backgroundImagePath_ = juce::File(path);
+        }
     }
 }
 

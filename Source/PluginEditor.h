@@ -32,6 +32,9 @@ private:
     // --- Buttons ---
     juce::TextButton freezeButton_{"Freeze"};
     juce::TextButton triggerButton_{"Trigger"};
+    juce::TextButton loadImageButton_{"BG Image"};
+    juce::TextButton savePresetButton_{"Save"};
+    juce::TextButton loadPresetButton_{"Load"};
 
     // --- Mode / Quality selectors ---
     juce::ComboBox modeSelector_;
@@ -58,6 +61,14 @@ private:
 
     // Meter values (cached from processor)
     float meterValues_[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+
+    // Background image
+    juce::Image backgroundImage_;
+    void loadBackgroundImage();
+    void savePreset();
+    void loadPreset();
+
+    std::unique_ptr<juce::FileChooser> fileChooser_;
 
     void setupKnob(juce::Slider& slider, juce::Label& label,
                    const juce::String& text);
