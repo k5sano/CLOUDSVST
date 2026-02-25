@@ -1,28 +1,27 @@
-#pragma once
-
+```cpp
+Copy#pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "CloudsEngine.h"
-#include "SampleRateAdapter.h"
-#include "DebugProbe.h"
+#include <juce_dsp/juce_dsp.h>
+#include "Parameters.h"
+#include "DSP/MT2GainStage.h"
+#include "DSP/MT2ToneStack.h"
+#include "DSP/DiodeMorpher.h"
 
-class CloudsVSTProcessor : public juce::AudioProcessor
-{
+class MT2Plugin : public juce::AudioProcessor {
 public:
-    CloudsVSTProcessor();
-    ~CloudsVSTProcessor() override;
+    MT2Plugin();
+    ~MT2Plugin() override = default;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
-    bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "CloudsCOSMOS b014"; }
+    const juce::String getName() const override { return "MetalCosmos"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
-    bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }
 
     int getNumPrograms() override { return 1; }
@@ -34,70 +33,32 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    juce::AudioProcessorValueTreeState& getAPVTS() { return apvts_; }
-
-    // Background image path (persistent state)
-    juce::File getBackgroundImagePath() const { return backgroundImagePath_; }
-    void setBackgroundImagePath(const juce::File& path) { backgroundImagePath_ = path; }
-
-    // Meter values for GUI (atomic for lock-free read)
-    std::atomic<float>& getMeterA() { return meterA_; }
-    std::atomic<float>& getMeterB() { return meterB_; }
-    std::atomic<float>& getMeterD() { return meterD_; }
-    std::atomic<float>& getMeterE() { return meterE_; }
-    std::atomic<float>& getMeterF() { return meterF_; }
-
-    // Lissajous visualization samples (lock-free ring buffer for GUI)
-    static constexpr int kLissajousSize = 256;
-    std::atomic<float>& getLissajousL(int index) { return lissajousL_[index % kLissajousSize]; }
-    std::atomic<float>& getLissajousR(int index) { return lissajousR_[index % kLissajousSize]; }
-    std::atomic<int>& getLissajousWritePos() { return lissajousWritePos_; }
+    juce::AudioProcessorValueTreeState apvts;
 
 private:
-    juce::AudioProcessorValueTreeState apvts_;
-    CloudsEngine engine_;
-    SampleRateAdapter srcAdapter_;
+    // Parameter pointers (atomic)
+    std::atomic<float>* distParam      = nullptr;
+    std::atomic<float>* levelParam     = nullptr;
+    std::atomic<float>* diodeMorphParam  = nullptr;
+    std::atomic<float>* diodeLinkParam   = nullptr;
+    std::atomic<float>* diodeMorph2Param = nullptr;
+    std::atomic<float>* eqLowParam     = nullptr;
+    std::atomic<float>* eqMidParam     = nullptr;
+    std::atomic<float>* eqMidFreqParam = nullptr;
+    std::atomic<float>* eqMidQParam    = nullptr;
+    std::atomic<float>* eqHighParam    = nullptr;
 
-    // Cached parameter pointers for real-time access
-    std::atomic<float>* positionParam_     = nullptr;
-    std::atomic<float>* sizeParam_         = nullptr;
-    std::atomic<float>* pitchParam_        = nullptr;
-    std::atomic<float>* densityParam_      = nullptr;
-    std::atomic<float>* textureParam_      = nullptr;
-    std::atomic<float>* dryWetParam_       = nullptr;
-    std::atomic<float>* spreadParam_       = nullptr;
-    std::atomic<float>* feedbackParam_     = nullptr;
-    std::atomic<float>* reverbParam_       = nullptr;
-    std::atomic<float>* freezeParam_       = nullptr;
-    std::atomic<float>* triggerParam_      = nullptr;
-    std::atomic<float>* modeParam_         = nullptr;
-    std::atomic<float>* qualityParam_      = nullptr;
-    std::atomic<float>* inputGainParam_    = nullptr;
-    std::atomic<float>* inputTrimParam_    = nullptr;
-    std::atomic<float>* outputGainParam_   = nullptr;
-    std::atomic<float>* limiterParam_      = nullptr;
+    // DSP
+    MT2GainStage mGainStage;
+    MT2ToneStack mToneStack;
+    DiodeMorpher mDiodeMorpher;
+    juce::dsp::Oversampling<double> mOversampling{2, 2,
+        juce::dsp::Oversampling<double>::filterHalfBandPolyphaseIIR, true};
 
-    // Debug probes
-    DebugProbe probeA_{"A:Input"};
-    DebugProbe probeB_{"B:PostGain"};
-    DebugProbe probeF_{"F:Output"};
+    // Internal double buffer for oversampled processing
+    juce::AudioBuffer<double> mDoubleBuffer;
 
-    // Buffer for avoiding aliasing
-    juce::AudioBuffer<float> inputCopyBuffer_;
-
-    // Real-time meter values (Peak level, 0.0 to 1.0)
-    std::atomic<float> meterA_{0.f}, meterB_{0.f},
-                       meterD_{0.f}, meterE_{0.f}, meterF_{0.f};
-
-    // Lissajous ring buffer for visualization (low CPU - just copy samples)
-    std::atomic<float> lissajousL_[kLissajousSize];
-    std::atomic<float> lissajousR_[kLissajousSize];
-    std::atomic<int> lissajousWritePos_{0};
-
-    // Persistent state
-    juce::File backgroundImagePath_;
-
-    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsVSTProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MT2Plugin)
 };
+Copy
+```
