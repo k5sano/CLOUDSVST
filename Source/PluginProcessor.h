@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "CloudsCOSMOS b013"; }
+    const juce::String getName() const override { return "CloudsCOSMOS b014"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -46,6 +46,12 @@ public:
     std::atomic<float>& getMeterD() { return meterD_; }
     std::atomic<float>& getMeterE() { return meterE_; }
     std::atomic<float>& getMeterF() { return meterF_; }
+
+    // Lissajous visualization samples (lock-free ring buffer for GUI)
+    static constexpr int kLissajousSize = 256;
+    std::atomic<float>& getLissajousL(int index) { return lissajousL_[index % kLissajousSize]; }
+    std::atomic<float>& getLissajousR(int index) { return lissajousR_[index % kLissajousSize]; }
+    std::atomic<int>& getLissajousWritePos() { return lissajousWritePos_; }
 
 private:
     juce::AudioProcessorValueTreeState apvts_;
@@ -82,6 +88,11 @@ private:
     // Real-time meter values (Peak level, 0.0 to 1.0)
     std::atomic<float> meterA_{0.f}, meterB_{0.f},
                        meterD_{0.f}, meterE_{0.f}, meterF_{0.f};
+
+    // Lissajous ring buffer for visualization (low CPU - just copy samples)
+    std::atomic<float> lissajousL_[kLissajousSize];
+    std::atomic<float> lissajousR_[kLissajousSize];
+    std::atomic<int> lissajousWritePos_{0};
 
     // Persistent state
     juce::File backgroundImagePath_;

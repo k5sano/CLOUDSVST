@@ -74,6 +74,7 @@ private:
                    const juce::String& text, const juce::Colour& colour);
     void drawMeter(juce::Graphics& g, const juce::String& label,
                    float value, int y, int width, int height);
+    void drawLissajous(juce::Graphics& g, int x, int y, int width, int height);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsVSTEditor)
 };

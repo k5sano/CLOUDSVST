@@ -179,7 +179,7 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsCOSMOS b013", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsCOSMOS b014", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Credit
@@ -201,6 +201,11 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
     drawMeter(g, "D: Engine In",  meterValues_[3], meterYStart + meterSpacing * 3, meterWidth, meterHeight);
     drawMeter(g, "E: Engine Out", meterValues_[4], meterYStart + meterSpacing * 4, meterWidth, meterHeight);
     drawMeter(g, "F: Output",     meterValues_[5], meterYStart + meterSpacing * 5, meterWidth, meterHeight);
+
+    // Draw Lissajous figure (stereo visualization) below meters
+    int lissajousY = meterYStart + meterSpacing * 6 + 10;
+    int lissajousSize = 160;
+    drawLissajous(g, getWidth() - 10 - lissajousSize - 10, lissajousY, lissajousSize, lissajousSize);
 }
 
 void CloudsVSTEditor::resized()
@@ -376,4 +381,89 @@ void CloudsVSTEditor::loadPreset()
                 }
             }
         });
+}
+
+//==============================================================================
+void CloudsVSTEditor::drawLissajous(juce::Graphics& g, int x, int y, int width, int height)
+{
+    // Draw background
+    g.setColour(juce::Colour(20, 20, 30));
+    g.fillRoundedRectangle(x, y, static_cast<float>(width), static_cast<float>(height), 8.0f);
+
+    // Draw border
+    g.setColour(juce::Colour(60, 60, 80));
+    g.drawRoundedRectangle(x, y, static_cast<float>(width), static_cast<float>(height), 8.0f, 1.0f);
+
+    // Draw center crosshair
+    g.setColour(juce::Colour(50, 50, 70));
+    float centerX = x + width * 0.5f;
+    float centerY = y + height * 0.5f;
+    g.drawLine(juce::Line<float>(centerX, y + 5.0f, centerX, y + height - 5.0f), 0.5f);
+    g.drawLine(juce::Line<float>(x + 5.0f, centerY, x + width - 5.0f, centerY), 0.5f);
+
+    // Draw label
+    g.setColour(juce::Colours::lightgrey);
+    g.setFont(10.0f);
+    g.drawText("Stereo (Lissajous)", x, y - 14, width, 14, juce::Justification::centred);
+
+    // Read samples from ring buffer
+    const int lissajousSize = processorRef_.kLissajousSize;
+    int writePos = processorRef_.getLissajousWritePos().load(std::memory_order_relaxed);
+
+    // Scale factor for drawing
+    float scale = width * 0.45f;
+    float offsetX = centerX;
+    float offsetY = centerY;
+
+    // Find peak for auto-scaling (prevent tiny display)
+    float peak = 0.0f;
+    for (int i = 0; i < lissajousSize; ++i)
+    {
+        float l = std::abs(processorRef_.getLissajousL(i).load(std::memory_order_relaxed));
+        float r = std::abs(processorRef_.getLissajousR(i).load(std::memory_order_relaxed));
+        peak = std::max({peak, l, r});
+    }
+    if (peak < 0.01f) peak = 0.01f;
+    scale /= peak;
+
+    // Draw the path with glow effect
+    juce::Path path;
+    bool started = false;
+
+    for (int i = 0; i < lissajousSize; ++i)
+    {
+        // Read from newest to oldest
+        int idx = (writePos - lissajousSize + i) % lissajousSize;
+        if (idx < 0) idx += lissajousSize;
+
+        float l = processorRef_.getLissajousL(idx).load(std::memory_order_relaxed);
+        float r = processorRef_.getLissajousR(idx).load(std::memory_order_relaxed);
+
+        float px = offsetX - l * scale;
+        float py = offsetY + r * scale;
+
+        if (!started)
+        {
+            path.startNewSubPath(px, py);
+            started = true;
+        }
+        else
+        {
+            path.lineTo(px, py);
+        }
+    }
+
+    // Draw glow (multiple passes with decreasing opacity)
+    for (int i = 3; i >= 0; --i)
+    {
+        float alpha = 0.15f - i * 0.03f;
+        float thickness = 2.0f + i * 1.5f;
+        juce::Colour glowColour = juce::Colour::fromHSV(0.5f, 0.7f, 1.0f, 1.0f);
+        g.setColour(glowColour.withAlpha(alpha));
+        g.strokePath(path, juce::PathStrokeType(thickness));
+    }
+
+    // Bright center line
+    g.setColour(juce::Colours::cyan);
+    g.strokePath(path, juce::PathStrokeType(1.5f));
 }

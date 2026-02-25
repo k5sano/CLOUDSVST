@@ -157,14 +157,26 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // [F] Output probe & meter
     float peakF = 0.0f;
+    int writePos = lissajousWritePos_.load(std::memory_order_relaxed);
+
     for (int i = 0; i < numSamples; ++i)
     {
         float absL = std::abs(outL[i]);
         float absR = std::abs(outR[i]);
         float v = (absL + absR) * 0.5f;
         if (v > peakF) peakF = v;
+
+        // Write samples to Lissajous ring buffer (every 8th sample to save CPU)
+        if ((i & 7) == 0)
+        {
+            int idx = writePos % kLissajousSize;
+            lissajousL_[idx].store(outL[i], std::memory_order_relaxed);
+            lissajousR_[idx].store(outR[i], std::memory_order_relaxed);
+            ++writePos;
+        }
     }
     meterF_.store(peakF, std::memory_order_relaxed);
+    lissajousWritePos_.store(writePos, std::memory_order_relaxed);
     probeF_.measureStereo(outL, outR, numSamples);
 }
 
