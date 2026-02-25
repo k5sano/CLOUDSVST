@@ -179,7 +179,7 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsCOSMOS b012", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsCOSMOS b013", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Credit
@@ -284,10 +284,11 @@ void CloudsVSTEditor::resized()
     auto limiterFreezeArea = row4.removeFromLeft(trimSpacing * 2);
     limiterKnob_.setBounds(limiterFreezeArea.removeFromLeft(trimSpacing).reduced(8, labelH));
 
-    // Freeze button: square, orange, next to limiter, aligned with value box
-    int freezeSize = 50;
-    int freezeY = limiterKnob_.getBounds().getBottom() - 10;
-    int freezeX = limiterFreezeArea.getX() + 20;
+    // Freeze button: 1.5x size, orange, next to limiter, bottom aligned with limiter's value box
+    int freezeSize = 75;  // 50 * 1.5
+    int limiterBoxBottom = limiterKnob_.getBounds().getBottom();
+    int freezeX = limiterFreezeArea.getX() + 15;
+    int freezeY = limiterBoxBottom - freezeSize;  // Bottom aligned with value box
     freezeButton_.setBounds(freezeX, freezeY, freezeSize, freezeSize);
 
     // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
