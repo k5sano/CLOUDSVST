@@ -71,7 +71,7 @@ private:
     std::unique_ptr<juce::FileChooser> fileChooser_;
 
     void setupKnob(juce::Slider& slider, juce::Label& label,
-                   const juce::String& text);
+                   const juce::String& text, const juce::Colour& colour);
     void drawMeter(juce::Graphics& g, const juce::String& label,
                    float value, int y, int width, int height);
 

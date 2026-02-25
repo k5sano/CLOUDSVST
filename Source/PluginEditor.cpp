@@ -17,18 +17,18 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
 
     auto& apvts = processorRef_.getAPVTS();
 
-    // --- Setup main knobs ---
-    setupKnob(positionKnob_, positionLabel_, "Position");
-    setupKnob(sizeKnob_,     sizeLabel_,     "Size");
-    setupKnob(pitchKnob_,    pitchLabel_,    "Pitch");
-    setupKnob(densityKnob_,  densityLabel_,  "Density");
-    setupKnob(textureKnob_,  textureLabel_,  "Texture");
+    // --- Setup main knobs (Blue) ---
+    setupKnob(positionKnob_, positionLabel_, "Position", juce::Colours::cyan);
+    setupKnob(sizeKnob_,     sizeLabel_,     "Size", juce::Colours::cyan);
+    setupKnob(pitchKnob_,    pitchLabel_,    "Pitch", juce::Colours::cyan);
+    setupKnob(densityKnob_,  densityLabel_,  "Density", juce::Colours::cyan);
+    setupKnob(textureKnob_,  textureLabel_,  "Texture", juce::Colours::cyan);
 
-    // --- Setup blend knobs ---
-    setupKnob(dryWetKnob_,    dryWetLabel_,    "Dry/Wet");
-    setupKnob(spreadKnob_,    spreadLabel_,    "Spread");
-    setupKnob(feedbackKnob_,  feedbackLabel_,  "Feedback");
-    setupKnob(reverbKnob_,    reverbLabel_,    "Reverb");
+    // --- Setup blend knobs (Green) ---
+    setupKnob(dryWetKnob_,    dryWetLabel_,    "Dry/Wet", juce::Colours::limegreen);
+    setupKnob(spreadKnob_,    spreadLabel_,    "Spread", juce::Colours::limegreen);
+    setupKnob(feedbackKnob_,  feedbackLabel_,  "Feedback", juce::Colours::limegreen);
+    setupKnob(reverbKnob_,    reverbLabel_,    "Reverb", juce::Colours::limegreen);
 
     // --- Input gain slider ---
     inputGainSlider_.setSliderStyle(juce::Slider::LinearVertical);
@@ -38,9 +38,10 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     inputGainLabel_.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(inputGainLabel_);
 
-    // --- Freeze button ---
+    // --- Freeze button (Orange, will be repositioned in resized()) ---
     freezeButton_.setClickingTogglesState(true);
-    freezeButton_.setColour(juce::TextButton::buttonOnColourId, juce::Colours::cyan);
+    freezeButton_.setColour(juce::TextButton::buttonOnColourId, juce::Colours::orange);
+    freezeButton_.setColour(juce::TextButton::buttonColourId, juce::Colour(60, 40, 30));
     addAndMakeVisible(freezeButton_);
 
     // --- Trigger button ---
@@ -87,10 +88,10 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     modeAtt_      = std::make_unique<ComboBoxAttachment>(apvts, "playback_mode", modeSelector_);
     qualityAtt_   = std::make_unique<ComboBoxAttachment>(apvts, "quality",       qualitySelector_);
 
-    // --- Engine gain staging knobs ---
-    setupKnob(inputTrimKnob_,  inputTrimLabel_,  "Eng.Trim");
-    setupKnob(outputGainKnob_, outputGainLabel_, "Eng.Gain");
-    setupKnob(limiterKnob_,    limiterLabel_,    "Limiter");
+    // --- Engine gain staging knobs (Red/Pink) ---
+    setupKnob(inputTrimKnob_,  inputTrimLabel_,  "Eng.Trim", juce::Colours::pink);
+    setupKnob(outputGainKnob_, outputGainLabel_, "Eng.Gain", juce::Colours::pink);
+    setupKnob(limiterKnob_,    limiterLabel_,    "Limiter", juce::Colours::pink);
     inputTrimAtt_  = std::make_unique<SliderAttachment>(apvts, "engine_input_trim",  inputTrimKnob_);
     outputGainAtt_ = std::make_unique<SliderAttachment>(apvts, "engine_output_gain", outputGainKnob_);
     limiterAtt_    = std::make_unique<SliderAttachment>(apvts, "output_limiter",    limiterKnob_);
@@ -147,14 +148,18 @@ void CloudsVSTEditor::drawMeter(juce::Graphics& g, const juce::String& label,
     g.drawRect(x, y, width, height, 1);
 }
 
-void CloudsVSTEditor::setupKnob(juce::Slider& slider, juce::Label& label, const juce::String& text)
+void CloudsVSTEditor::setupKnob(juce::Slider& slider, juce::Label& label, const juce::String& text, const juce::Colour& colour)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 56, 16);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 56, 18);
+    slider.setColour(juce::Slider::rotarySliderFillColourId, colour);
+    slider.setColour(juce::Slider::thumbColourId, colour.brighter(0.3f));
     addAndMakeVisible(slider);
 
     label.setText(text, juce::dontSendNotification);
     label.setJustificationType(juce::Justification::centred);
+    label.setFont(13.0f);  // Larger font for labels
+    label.setColour(juce::Label::textColourId, colour);
     label.attachToComponent(&slider, false);
     addAndMakeVisible(label);
 }
@@ -237,7 +242,7 @@ void CloudsVSTEditor::resized()
 
     area.removeFromTop(8);
 
-    // --- Row 3: Mode, Quality, Freeze, Trigger, BG Image, Save, Load ---
+    // --- Row 3: Mode, Quality, Trigger, [BG Image, Save, Load on right] ---
     auto row3 = area.removeFromTop(40);
     row3.removeFromRight(50);
 
@@ -247,25 +252,35 @@ void CloudsVSTEditor::resized()
     qualityLabel_.setBounds(row3.removeFromLeft(48));
     qualitySelector_.setBounds(row3.removeFromLeft(110).reduced(2));
     row3.removeFromLeft(10);
-    freezeButton_.setBounds(row3.removeFromLeft(60).reduced(2));
-    row3.removeFromLeft(4);
     triggerButton_.setBounds(row3.removeFromLeft(60).reduced(2));
-    row3.removeFromLeft(4);
-    loadImageButton_.setBounds(row3.removeFromLeft(75).reduced(2));
-    row3.removeFromLeft(4);
-    savePresetButton_.setBounds(row3.removeFromLeft(55).reduced(2));
-    row3.removeFromLeft(4);
-    loadPresetButton_.setBounds(row3.removeFromLeft(55).reduced(2));
+
+    // Right side buttons (BG Image, Save, Load)
+    auto rightButtons = row3.removeFromRight(240);
+    loadImageButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
+    rightButtons.removeFromLeft(4);
+    savePresetButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
+    rightButtons.removeFromLeft(4);
+    loadPresetButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
 
     area.removeFromTop(8);
 
-    // --- Row 4: Engine gain staging ---
+    // --- Row 4: Engine gain staging + Freeze button ---
     auto row4 = area.removeFromTop(knobH + labelH);
     row4.removeFromRight(50);
     int trimSpacing = row4.getWidth() / 4;
     inputTrimKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
     outputGainKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
-    limiterKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
+
+    // Limiter knob with Freeze button below
+    auto limiterArea = row4.removeFromLeft(trimSpacing);
+    limiterKnob_.setBounds(limiterArea.reduced(8, labelH));
+
+    // Freeze button: square, orange, below limiter's value box
+    // Position it aligned with the bottom of the limiter's text box
+    int freezeSize = 44;
+    int limiterBoxBottom = limiterKnob_.getBounds().getBottom();
+    int limiterBoxRight = limiterKnob_.getBounds().getRight();
+    freezeButton_.setBounds(limiterBoxRight - freezeSize, limiterBoxBottom + 2, freezeSize, freezeSize);
 
     // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
     auto totalGainArea = getLocalBounds().reduced(10);
