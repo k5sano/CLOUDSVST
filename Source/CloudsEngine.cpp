@@ -38,7 +38,7 @@ void CloudsEngine::init()
     p->position = 0.5f;
     p->size = 0.5f;
     p->pitch = 0.0f;
-    p->density = 0.5f;
+    p->density = 0.7f;
     p->texture = 0.5f;
     p->dry_wet = 0.5f;
     p->stereo_spread = 0.0f;
@@ -49,6 +49,12 @@ void CloudsEngine::init()
     p->gate = false;
 
     initialised_ = true;
+}
+
+void CloudsEngine::setMeterPointers(std::atomic<float>* d, std::atomic<float>* e)
+{
+    meterD_ = d;
+    meterE_ = e;
 }
 
 void CloudsEngine::process(const float* inputL, const float* inputR,
@@ -65,10 +71,25 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
     // Process in kBlockSize chunks
     int remaining = numSamples;
     int offset = 0;
+    float maxPeakD = 0.0f;
+    float maxPeakE = 0.0f;
 
     while (remaining > 0)
     {
         const int blockSize = std::min(remaining, kBlockSize);
+
+        // [D] Engine input probe - measure peak for meter
+        float peakD = 0.0f;
+        for (int i = 0; i < blockSize; ++i)
+        {
+            float absL = std::abs(inputL[offset + i]);
+            float absR = std::abs(inputR[offset + i]);
+            float v = (absL + absR) * 0.5f;
+            if (v > peakD) peakD = v;
+        }
+        if (peakD > maxPeakD) maxPeakD = peakD;
+
+        probeD_.measureStereo(inputL + offset, inputR + offset, blockSize);
 
         // Convert float to ShortFrame (int16 stereo)
         clouds::ShortFrame inputFrames[kBlockSize];
@@ -87,21 +108,25 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
             inputFrames[i].r = static_cast<int16_t>(r * 32767.0f);
         }
 
-        // Zero-fill any remainder if blockSize < kBlockSize
-        for (int i = blockSize; i < kBlockSize; ++i)
+        // Hold last valid sample instead of zero-filling (reduces clicks)
+        if (blockSize < kBlockSize)
         {
-            inputFrames[i].l = 0;
-            inputFrames[i].r = 0;
+            const auto& lastSample = inputFrames[blockSize - 1];
+            for (int i = blockSize; i < kBlockSize; ++i)
+            {
+                inputFrames[i] = lastSample;
+            }
         }
 
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
-        // Run the Clouds DSP
-        processor_->Prepare();
-        processor_->Process(inputFrames, outputFrames, kBlockSize);
+        // Run Prepare() multiple times to allow correlator to converge (especially for Stretch mode)
+        // On hardware, Prepare() runs thousands of times between Process() calls
+        for (int p = 0; p < prepareCallsPerBlock_; ++p)
+            processor_->Prepare();
 
-        // Reset trigger after processing (momentary behaviour)
-        processor_->mutable_parameters()->trigger = false;
+        // Run the Clouds DSP
+        processor_->Process(inputFrames, outputFrames, kBlockSize);
 
         // Convert back to float
         for (int i = 0; i < blockSize; ++i)
@@ -110,9 +135,29 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
             outputR[offset + i] = static_cast<float>(outputFrames[i].r) / 32768.0f;
         }
 
+        // [E] Engine output probe - measure peak for meter
+        float peakE = 0.0f;
+        for (int i = 0; i < blockSize; ++i)
+        {
+            float absL = std::abs(outputL[offset + i]);
+            float absR = std::abs(outputR[offset + i]);
+            float v = (absL + absR) * 0.5f;
+            if (v > peakE) peakE = v;
+        }
+        if (peakE > maxPeakE) maxPeakE = peakE;
+
+        probeE_.measureStereo(outputL + offset, outputR + offset, blockSize);
+
         offset += blockSize;
         remaining -= blockSize;
     }
+
+    // Update atomic meters for GUI
+    if (meterD_) meterD_->store(maxPeakD, std::memory_order_relaxed);
+    if (meterE_) meterE_->store(maxPeakE, std::memory_order_relaxed);
+
+    // Reset trigger after processing all chunks (momentary behaviour)
+    processor_->mutable_parameters()->trigger = false;
 }
 
 // --- Parameter setters ---
@@ -186,7 +231,11 @@ void CloudsEngine::setTrigger(bool v)
 void CloudsEngine::setPlaybackMode(int mode)
 {
     if (processor_ && mode >= 0 && mode < clouds::PLAYBACK_MODE_LAST)
+    {
         processor_->set_playback_mode(static_cast<clouds::PlaybackMode>(mode));
+        // Stretch mode needs many Prepare() calls for correlator
+        prepareCallsPerBlock_ = (mode == clouds::PLAYBACK_MODE_STRETCH) ? 32 : 1;
+    }
 }
 
 void CloudsEngine::setQuality(int quality)

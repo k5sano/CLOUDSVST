@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 
 class CloudsVSTEditor : public juce::AudioProcessorEditor
+                  , public juce::Timer
 {
 public:
     explicit CloudsVSTEditor(CloudsVSTProcessor&);
@@ -11,6 +12,7 @@ public:
 
     void paint(juce::Graphics&) override;
     void resized() override;
+    void timerCallback() override;
 
 private:
     CloudsVSTProcessor& processorRef_;
@@ -50,8 +52,13 @@ private:
     std::unique_ptr<ButtonAttachment> freezeAtt_, triggerAtt_;
     std::unique_ptr<ComboBoxAttachment> modeAtt_, qualityAtt_;
 
+    // Meter values (cached from processor)
+    float meterValues_[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+
     void setupKnob(juce::Slider& slider, juce::Label& label,
                    const juce::String& text);
+    void drawMeter(juce::Graphics& g, const juce::String& label,
+                   float value, int y, int width, int height);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsVSTEditor)
 };

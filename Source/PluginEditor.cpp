@@ -3,7 +3,10 @@
 CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     : AudioProcessorEditor(&p), processorRef_(p)
 {
-    setSize(620, 420);
+    setSize(800, 420);  // Expanded width for meters
+
+    // Start timer for GUI updates (30fps)
+    startTimerHz(30);
 
     auto& apvts = processorRef_.getAPVTS();
 
@@ -70,6 +73,53 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
 
 CloudsVSTEditor::~CloudsVSTEditor()
 {
+    stopTimer();
+}
+
+void CloudsVSTEditor::timerCallback()
+{
+    // Read meter values from processor (atomic, lock-free)
+    meterValues_[0] = processorRef_.getMeterA().load(std::memory_order_relaxed);
+    meterValues_[1] = processorRef_.getMeterB().load(std::memory_order_relaxed);
+    meterValues_[2] = processorRef_.getMeterC().load(std::memory_order_relaxed);
+    meterValues_[3] = processorRef_.getMeterD().load(std::memory_order_relaxed);
+    meterValues_[4] = processorRef_.getMeterE().load(std::memory_order_relaxed);
+    meterValues_[5] = processorRef_.getMeterF().load(std::memory_order_relaxed);
+
+    // Repaint to show updated meters
+    repaint();
+}
+
+void CloudsVSTEditor::drawMeter(juce::Graphics& g, const juce::String& label,
+                                 float value, int y, int width, int height)
+{
+    const int x = getLocalBounds().getWidth() - width - 10;
+
+    // Draw background
+    g.setColour(juce::Colour(30, 30, 40));
+    g.fillRect(x, y, width, height);
+
+    // Draw label
+    g.setColour(juce::Colours::lightgrey);
+    g.setFont(11.0f);
+    g.drawText(label, x + 5, y + 2, 60, 14, juce::Justification::left);
+
+    // Draw bar
+    const float barWidth = std::min(value * 140.0f, 140.0f);  // Scale to 140px max
+    const int barX = x + 65;
+    const int barY = y + 3;
+    const int barHeight = height - 6;
+
+    if (value > 0.001f)
+        g.setColour(juce::Colours::green);
+    else
+        g.setColour(juce::Colour(60, 60, 70));
+
+    g.fillRect(barX, barY, static_cast<int>(barWidth), barHeight);
+
+    // Draw border
+    g.setColour(juce::Colour(80, 80, 90));
+    g.drawRect(x, y, width, height, 1);
 }
 
 void CloudsVSTEditor::setupKnob(juce::Slider& slider, juce::Label& label, const juce::String& text)
@@ -99,6 +149,19 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
     g.drawText("Based on Mutable Instruments Clouds by Emilie Gillet (MIT License)",
                getLocalBounds().removeFromBottom(18),
                juce::Justification::centred);
+
+    // Draw signal meters on the right side
+    const int meterWidth = 220;
+    const int meterHeight = 20;
+    const int meterYStart = 50;
+    const int meterSpacing = 25;
+
+    drawMeter(g, "A: Input",      meterValues_[0], meterYStart,               meterWidth, meterHeight);
+    drawMeter(g, "B: PostGain",   meterValues_[1], meterYStart + meterSpacing, meterWidth, meterHeight);
+    drawMeter(g, "C: SRC Down",   meterValues_[2], meterYStart + meterSpacing * 2, meterWidth, meterHeight);
+    drawMeter(g, "D: Engine In",  meterValues_[3], meterYStart + meterSpacing * 3, meterWidth, meterHeight);
+    drawMeter(g, "E: Engine Out", meterValues_[4], meterYStart + meterSpacing * 4, meterWidth, meterHeight);
+    drawMeter(g, "F: Output",     meterValues_[5], meterYStart + meterSpacing * 5, meterWidth, meterHeight);
 }
 
 void CloudsVSTEditor::resized()
@@ -106,6 +169,9 @@ void CloudsVSTEditor::resized()
     auto area = getLocalBounds().reduced(10);
     area.removeFromTop(30);  // Title
     area.removeFromBottom(20);  // Credit
+
+    // Reserve right side for meters
+    area.removeFromRight(230);
 
     const int knobW = 80;
     const int knobH = 90;
@@ -151,10 +217,11 @@ void CloudsVSTEditor::resized()
     row3.removeFromLeft(6);
     triggerButton_.setBounds(row3.removeFromLeft(70).reduced(2));
 
-    // --- Input Gain slider (right side, spanning rows 1-2) ---
+    // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
     auto totalGainArea = getLocalBounds().reduced(10);
     totalGainArea.removeFromTop(30);
     totalGainArea.removeFromBottom(20);
+    totalGainArea.removeFromRight(230);  // Meters area
     auto gainSliderArea = totalGainArea.removeFromRight(50);
     inputGainLabel_.setBounds(gainSliderArea.removeFromTop(labelH));
     inputGainSlider_.setBounds(gainSliderArea.removeFromTop(knobH * 2 + labelH));

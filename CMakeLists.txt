@@ -72,7 +72,6 @@ target_compile_definitions(CloudsVST
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
-        JUCE_DISABLE_ASSERTIONS=1
     PUBLIC
         JUCE_DISPLAY_SPLASH_SCREEN=0
 )

@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <cstring>
+#include <atomic>
 #include <juce_core/juce_core.h>
+#include "DebugProbe.h"
 
 // Forward declaration — avoid pulling in full clouds headers here
 namespace clouds {
@@ -40,6 +42,9 @@ public:
     void setPlaybackMode(int mode);   // 0-3
     void setQuality(int quality);     // 0-3
 
+    // Set atomic meter pointers for real-time GUI updates
+    void setMeterPointers(std::atomic<float>* d, std::atomic<float>* e);
+
     static constexpr int kBlockSize = 32;
 
 private:
@@ -51,6 +56,17 @@ private:
     std::unique_ptr<clouds::GranularProcessor> processor_;
 
     bool initialised_ = false;
+
+    // Debug probes
+    DebugProbe probeD_{"D:Engine_In"};
+    DebugProbe probeE_{"E:Engine_Out"};
+
+    // Atomic meter pointers for GUI
+    std::atomic<float>* meterD_ = nullptr;
+    std::atomic<float>* meterE_ = nullptr;
+
+    // Stretch mode needs many Prepare() calls for correlator to converge
+    int prepareCallsPerBlock_ = 1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsEngine)
 };
