@@ -243,8 +243,25 @@ void CloudsVSTEditor::resized()
     area.removeFromTop(8);
 
     // --- Row 3: Mode, Quality, Trigger ------------------------------------------------
-    auto row3 = area.removeFromTop(40);
-    row3.removeFromRight(50);
+    // Get full width area before removing right margin for buttons
+    auto row3Full = area.removeFromTop(40);
+
+    // Reserve space for buttons on the right first
+    int buttonWidth = 75;
+    int buttonSpacing = 6;
+    int totalButtonWidth = buttonWidth * 3 + buttonSpacing * 2;
+
+    // Get the x position for buttons (from right edge, accounting for meters)
+    int buttonX = getLocalBounds().getWidth() - 10 - 230 - totalButtonWidth - 10;
+
+    // Place buttons absolutely positioned
+    loadImageButton_.setBounds(buttonX, row3Full.getY() + 8, buttonWidth, 24);
+    savePresetButton_.setBounds(buttonX + buttonWidth + buttonSpacing, row3Full.getY() + 8, buttonWidth, 24);
+    loadPresetButton_.setBounds(buttonX + (buttonWidth + buttonSpacing) * 2, row3Full.getY() + 8, buttonWidth, 24);
+
+    // Remaining area for controls
+    auto row3 = row3Full.reduced(10);
+    row3.removeFromRight(totalButtonWidth + 20);  // Reserve button space
 
     modeLabel_.setBounds(row3.removeFromLeft(40));
     modeSelector_.setBounds(row3.removeFromLeft(130).reduced(2));
@@ -253,16 +270,6 @@ void CloudsVSTEditor::resized()
     qualitySelector_.setBounds(row3.removeFromLeft(110).reduced(2));
     row3.removeFromLeft(10);
     triggerButton_.setBounds(row3.removeFromLeft(60).reduced(2));
-
-    // Right side buttons (BG Image, Save, Load) - take from remaining space
-    int buttonWidth = 70;
-    int buttonSpacing = 4;
-    auto buttonsArea = row3.removeFromRight(buttonWidth * 3 + buttonSpacing * 2 + 10);
-    loadImageButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
-    buttonsArea.removeFromLeft(buttonSpacing);
-    savePresetButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
-    buttonsArea.removeFromLeft(buttonSpacing);
-    loadPresetButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
 
     area.removeFromTop(8);
 
