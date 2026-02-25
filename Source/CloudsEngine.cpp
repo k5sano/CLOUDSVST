@@ -92,12 +92,16 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
 
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
-        for (int p = 0; p < prepareCallsPerBlock_; ++p)
-            processor_->Prepare();
-
+        // ONE Prepare before Process (to init buffers)
+        processor_->Prepare();
+        // Process (this sets correlator_loaded_=false in Stretch mode)
         processor_->Process(inputFrames, outputFrames, kBlockSize);
-
+        // Reset trigger after Process (Clouds convention)
         processor_->mutable_parameters()->trigger = false;
+        // Additional Prepare calls AFTER Process (for Stretch mode correlator)
+        // Process->Play sets correlator_loaded_=false, then Prepare runs LoadCorrelator + EvaluateSomeCandidates
+        for (int p = 1; p < prepareCallsPerBlock_; ++p)
+            processor_->Prepare();
 
         for (int i = 0; i < blockSize; ++i)
         {
