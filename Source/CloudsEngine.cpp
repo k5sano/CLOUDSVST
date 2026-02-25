@@ -55,6 +55,9 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
         return;
     }
 
+    float peakD = 0.0f;
+    float peakE = 0.0f;
+
     int remaining = numSamples;
     int offset = 0;
 
@@ -75,6 +78,10 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
 
             inputFrames[i].l = static_cast<int16_t>(l * 32767.0f);
             inputFrames[i].r = static_cast<int16_t>(r * 32767.0f);
+
+            // Meter D: engine input level (after trim, before int16 conversion is lossy, measure float)
+            float absV = (std::abs(l) + std::abs(r)) * 0.5f;
+            if (absV > peakD) peakD = absV;
         }
 
         for (int i = blockSize; i < kBlockSize; ++i)
@@ -85,7 +92,6 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
 
         std::memset(outputFrames, 0, sizeof(outputFrames));
 
-        // Prepare multiple times for Stretch mode correlator convergence
         for (int p = 0; p < prepareCallsPerBlock_; ++p)
             processor_->Prepare();
 
@@ -95,13 +101,24 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
 
         for (int i = 0; i < blockSize; ++i)
         {
-            outputL[offset + i] = static_cast<float>(outputFrames[i].l) / 32768.0f * outputGain_;
-            outputR[offset + i] = static_cast<float>(outputFrames[i].r) / 32768.0f * outputGain_;
+            float outLf = static_cast<float>(outputFrames[i].l) / 32768.0f * outputGain_;
+            float outRf = static_cast<float>(outputFrames[i].r) / 32768.0f * outputGain_;
+
+            outputL[offset + i] = outLf;
+            outputR[offset + i] = outRf;
+
+            // Meter E: engine output level
+            float absV = (std::abs(outLf) + std::abs(outRf)) * 0.5f;
+            if (absV > peakE) peakE = absV;
         }
 
         offset += blockSize;
         remaining -= blockSize;
     }
+
+    // Store meter values (lock-free)
+    if (meterD_) meterD_->store(peakD, std::memory_order_relaxed);
+    if (meterE_) meterE_->store(peakE, std::memory_order_relaxed);
 }
 
 void CloudsEngine::setPosition(float v) { if (processor_) processor_->mutable_parameters()->position = v; }

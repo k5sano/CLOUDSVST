@@ -40,6 +40,7 @@ CloudsVSTProcessor::~CloudsVSTProcessor()
 void CloudsVSTProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     engine_.init();
+    engine_.setMeterPointers(&meterD_, &meterE_);
     srcAdapter_.prepare(sampleRate, samplesPerBlock);
     inputCopyBuffer_.setSize(2, samplesPerBlock);
 }

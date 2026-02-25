@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <cstring>
+#include <atomic>
 #include <juce_core/juce_core.h>
 
 namespace clouds {
@@ -33,11 +34,17 @@ public:
     void setFreeze(bool v);
     void setTrigger(bool v);
     void setQuality(int quality);
-
     void setPlaybackMode(int mode);
 
     void setInputTrim(float v)  { inputTrim_ = v; }
     void setOutputGain(float v) { outputGain_ = v; }
+
+    // Set pointers to atomic meters owned by the Processor
+    void setMeterPointers(std::atomic<float>* meterD, std::atomic<float>* meterE)
+    {
+        meterD_ = meterD;
+        meterE_ = meterE;
+    }
 
     static constexpr int kBlockSize = 32;
 
@@ -53,6 +60,10 @@ private:
     int prepareCallsPerBlock_ = 1;
     float inputTrim_ = 0.5f;
     float outputGain_ = 1.6f;
+
+    // Non-owning pointers to processor's atomic meters (null = no metering)
+    std::atomic<float>* meterD_ = nullptr;
+    std::atomic<float>* meterE_ = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsEngine)
 };

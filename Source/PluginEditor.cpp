@@ -3,7 +3,7 @@
 CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     : AudioProcessorEditor(&p), processorRef_(p)
 {
-    setSize(800, 420);  // Expanded width for meters
+    setSize(800, 520);  // Expanded width for meters, height for Row 4
 
     // Start timer for GUI updates (30fps)
     startTimerHz(30);
@@ -69,6 +69,12 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     triggerAtt_   = std::make_unique<ButtonAttachment>(apvts, "trigger",        triggerButton_);
     modeAtt_      = std::make_unique<ComboBoxAttachment>(apvts, "playback_mode", modeSelector_);
     qualityAtt_   = std::make_unique<ComboBoxAttachment>(apvts, "quality",       qualitySelector_);
+
+    // --- Engine gain staging knobs ---
+    setupKnob(inputTrimKnob_,  inputTrimLabel_,  "Eng.Trim");
+    setupKnob(outputGainKnob_, outputGainLabel_, "Eng.Gain");
+    inputTrimAtt_  = std::make_unique<SliderAttachment>(apvts, "engine_input_trim",  inputTrimKnob_);
+    outputGainAtt_ = std::make_unique<SliderAttachment>(apvts, "engine_output_gain", outputGainKnob_);
 }
 
 CloudsVSTEditor::~CloudsVSTEditor()
@@ -216,6 +222,15 @@ void CloudsVSTEditor::resized()
     freezeButton_.setBounds(row3.removeFromLeft(70).reduced(2));
     row3.removeFromLeft(6);
     triggerButton_.setBounds(row3.removeFromLeft(70).reduced(2));
+
+    area.removeFromTop(8);
+
+    // --- Row 4: Engine gain staging ---
+    auto row4 = area.removeFromTop(knobH + labelH);
+    row4.removeFromRight(50);
+    int trimSpacing = row4.getWidth() / 4;
+    inputTrimKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
+    outputGainKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
 
     // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
     auto totalGainArea = getLocalBounds().reduced(10);

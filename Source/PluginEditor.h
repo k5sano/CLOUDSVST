@@ -23,6 +23,9 @@ private:
     // --- Blend knobs ---
     juce::Slider dryWetKnob_, spreadKnob_, feedbackKnob_, reverbKnob_;
 
+    // --- Engine gain staging knobs ---
+    juce::Slider inputTrimKnob_, outputGainKnob_;
+
     // --- Input gain ---
     juce::Slider inputGainSlider_;
 
@@ -37,7 +40,7 @@ private:
     // --- Labels ---
     juce::Label positionLabel_, sizeLabel_, pitchLabel_, densityLabel_, textureLabel_;
     juce::Label dryWetLabel_, spreadLabel_, feedbackLabel_, reverbLabel_;
-    juce::Label inputGainLabel_, modeLabel_, qualityLabel_;
+    juce::Label inputTrimLabel_, outputGainLabel_, inputGainLabel_, modeLabel_, qualityLabel_;
 
     // --- APVTS Attachments ---
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
@@ -48,6 +51,7 @@ private:
         densityAtt_, textureAtt_;
     std::unique_ptr<SliderAttachment> dryWetAtt_, spreadAtt_, feedbackAtt_,
         reverbAtt_;
+    std::unique_ptr<SliderAttachment> inputTrimAtt_, outputGainAtt_;
     std::unique_ptr<SliderAttachment> inputGainAtt_;
     std::unique_ptr<ButtonAttachment> freezeAtt_, triggerAtt_;
     std::unique_ptr<ComboBoxAttachment> modeAtt_, qualityAtt_;
