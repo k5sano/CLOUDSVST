@@ -22,15 +22,15 @@ public:
                  int numSamples);
 
     // --- Parameter setters ---
-    void setPosition(float v);
-    void setSize(float v);
-    void setPitch(float v);
-    void setDensity(float v);
-    void setTexture(float v);
-    void setDryWet(float v);
-    void setStereoSpread(float v);
-    void setFeedback(float v);
-    void setReverb(float v);
+    void setPosition(float v) { targetPosition_ = v; }
+    void setSize(float v) { targetSize_ = v; }
+    void setPitch(float v) { targetPitch_ = v; }
+    void setDensity(float v) { targetDensity_ = v; }
+    void setTexture(float v) { targetTexture_ = v; }
+    void setDryWet(float v) { targetDryWet_ = v; }
+    void setStereoSpread(float v) { targetSpread_ = v; }
+    void setFeedback(float v) { targetFeedback_ = v; }
+    void setReverb(float v) { targetReverb_ = v; }
     void setFreeze(bool v);
     void setTrigger(bool v);
     void setQuality(int quality);
@@ -63,6 +63,29 @@ private:
     // Non-owning pointers to processor's atomic meters (null = no metering)
     std::atomic<float>* meterD_ = nullptr;
     std::atomic<float>* meterE_ = nullptr;
+
+    // Parameter smoothing
+    float targetPosition_ = 0.5f;
+    float targetSize_ = 0.5f;
+    float targetPitch_ = 0.0f;
+    float targetDensity_ = 0.5f;
+    float targetTexture_ = 0.5f;
+    float targetDryWet_ = 0.5f;
+    float targetSpread_ = 0.0f;
+    float targetFeedback_ = 0.0f;
+    float targetReverb_ = 0.0f;
+
+    float smoothedPosition_ = 0.5f;
+    float smoothedSize_ = 0.5f;
+    float smoothedPitch_ = 0.0f;
+    float smoothedDensity_ = 0.5f;
+    float smoothedTexture_ = 0.5f;
+    float smoothedDryWet_ = 0.5f;
+    float smoothedSpread_ = 0.0f;
+    float smoothedFeedback_ = 0.0f;
+    float smoothedReverb_ = 0.0f;
+
+    static constexpr float kSmoothingCoeff = 0.02f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsEngine)
 };

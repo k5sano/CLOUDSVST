@@ -103,8 +103,15 @@ void SampleRateAdapter::process(const float* inL, const float* inR,
         }
         else
         {
-            outL[i] = 0.0f;
-            outR[i] = 0.0f;
+            outL[i] = lastOutputL_;
+            outR[i] = lastOutputR_;
+        }
+
+        // Update held values
+        if (outputSamplesAvailable_ > 4)
+        {
+            lastOutputL_ = outL[i];
+            lastOutputR_ = outR[i];
         }
     }
 }

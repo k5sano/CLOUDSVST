@@ -146,7 +146,7 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsVST b009", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsVST b010", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Credit

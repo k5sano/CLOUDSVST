@@ -95,6 +95,32 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
             if (absV > peakD) peakD = absV;
         }
 
+        // Parameter smoothing (one-pole filter per block)
+        auto smooth = [](float& current, float target, float coeff) {
+            current += coeff * (target - current);
+        };
+        smooth(smoothedPosition_, targetPosition_, kSmoothingCoeff);
+        smooth(smoothedSize_, targetSize_, kSmoothingCoeff);
+        smooth(smoothedPitch_, targetPitch_, kSmoothingCoeff);
+        smooth(smoothedDensity_, targetDensity_, kSmoothingCoeff);
+        smooth(smoothedTexture_, targetTexture_, kSmoothingCoeff);
+        smooth(smoothedDryWet_, targetDryWet_, kSmoothingCoeff);
+        smooth(smoothedSpread_, targetSpread_, kSmoothingCoeff);
+        smooth(smoothedFeedback_, targetFeedback_, kSmoothingCoeff);
+        smooth(smoothedReverb_, targetReverb_, kSmoothingCoeff);
+
+        // Apply smoothed parameters to processor
+        auto* p = processor_->mutable_parameters();
+        p->position = smoothedPosition_;
+        p->size = smoothedSize_;
+        p->pitch = smoothedPitch_;
+        p->density = smoothedDensity_;
+        p->texture = smoothedTexture_;
+        p->dry_wet = smoothedDryWet_;
+        p->stereo_spread = smoothedSpread_;
+        p->feedback = smoothedFeedback_;
+        p->reverb = smoothedReverb_;
+
         for (int i = blockSize; i < kBlockSize; ++i)
         {
             inputFrames[i].l = 0;
@@ -130,28 +156,24 @@ void CloudsEngine::process(const float* inputL, const float* inputR,
     if (meterE_) meterE_->store(peakE, std::memory_order_relaxed);
 }
 
-void CloudsEngine::setPosition(float v) { if (processor_) processor_->mutable_parameters()->position = v; }
-void CloudsEngine::setSize(float v) { if (processor_) processor_->mutable_parameters()->size = v; }
-void CloudsEngine::setPitch(float v) { if (processor_) processor_->mutable_parameters()->pitch = v; }
-void CloudsEngine::setDensity(float v) { if (processor_) processor_->mutable_parameters()->density = v; }
-void CloudsEngine::setTexture(float v) { if (processor_) processor_->mutable_parameters()->texture = v; }
-void CloudsEngine::setDryWet(float v) { if (processor_) processor_->mutable_parameters()->dry_wet = v; }
-void CloudsEngine::setStereoSpread(float v) { if (processor_) processor_->mutable_parameters()->stereo_spread = v; }
-void CloudsEngine::setFeedback(float v) { if (processor_) processor_->mutable_parameters()->feedback = v; }
-void CloudsEngine::setReverb(float v) { if (processor_) processor_->mutable_parameters()->reverb = v; }
-void CloudsEngine::setFreeze(bool v) { if (processor_) processor_->mutable_parameters()->freeze = v; }
-void CloudsEngine::setTrigger(bool v) { if (processor_) processor_->mutable_parameters()->trigger = v; }
-
 void CloudsEngine::setPlaybackMode(int mode)
 {
-    if (processor_ && mode >= 0 && mode < clouds::PLAYBACK_MODE_LAST)
-    {
+    if (processor_ && mode >= 0 && mode < 4)
         processor_->set_playback_mode(static_cast<clouds::PlaybackMode>(mode));
-    }
 }
 
 void CloudsEngine::setQuality(int quality)
 {
     if (processor_ && quality >= 0 && quality <= 3)
         processor_->set_quality(quality);
+}
+
+void CloudsEngine::setFreeze(bool v)
+{
+    if (processor_) processor_->mutable_parameters()->freeze = v;
+}
+
+void CloudsEngine::setTrigger(bool v)
+{
+    if (processor_) processor_->mutable_parameters()->trigger = v;
 }

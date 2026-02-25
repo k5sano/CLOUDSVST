@@ -47,6 +47,9 @@ private:
     float engineOutL_[kBlockSize] = {};
     float engineOutR_[kBlockSize] = {};
 
+    float lastOutputL_ = 0.0f;
+    float lastOutputR_ = 0.0f;
+
     static inline float hermite(float xm1, float x0, float x1, float x2, float t)
     {
         float c = (x1 - xm1) * 0.5f;

@@ -145,6 +145,14 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     srcAdapter_.process(inL, inR, outL, outR, numSamples, engine_);
 
+    // Output safety clamp
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        auto* data = buffer.getWritePointer(ch);
+        for (int i = 0; i < numSamples; ++i)
+            data[i] = juce::jlimit(-1.0f, 1.0f, data[i]);
+    }
+
     // [F] Output probe & meter
     float peakF = 0.0f;
     for (int i = 0; i < numSamples; ++i)
