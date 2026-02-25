@@ -5,7 +5,7 @@
 
 set -e
 
-VERSION="1.0.0"
+VERSION="0.0.14"
 BUILD_DIR="$(pwd)/build"
 INSTALLER_DIR="$(pwd)/installer"
 PKG_DIR="$INSTALLER_DIR/pkg"
@@ -88,10 +88,8 @@ pkgbuild --root "$PKG_DIR/root" \
 cat > "$PKG_DIR/distribution.xml" << 'EOFX'
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="1">
-    <title>CloudsCOSMOS v1.0.0</title>
+    <title>CloudsCOSMOS v0.0.14</title>
     <background file="background.png" alignment="center" scaling="tofit"/>
-    <welcome file="welcome.html"/>
-    <license file="license.txt" mime-type="text/plain"/>
     <options customize="allow" allow-external-scripts="false" rootVolumeOnly="true"/>
     <choices-outline>
         <line choice="default">CloudsCOSMOS Complete Installation</line>
@@ -99,7 +97,7 @@ cat > "$PKG_DIR/distribution.xml" << 'EOFX'
     <choice id="default" title="Install CloudsCOSMOS" enabled="true" selected="true" visible="true" start_selected="true" start_enabled="true">
         <pkg-ref id="com.K5SANO.CloudsCOSMOS"/>
     </choice>
-    <pkg-ref id="com.K5SANO.CloudsCOSMOS" version="1.0.0" onConclusion="none">CloudsCOSMOS</pkg-ref>
+    <pkg-ref id="com.K5SANO.CloudsCOSMOS" version="0.0.14" onConclusion="none">CloudsCOSMOS</pkg-ref>
 </installer-gui-script>
 EOFX
 
@@ -177,9 +175,9 @@ cp /Users/sanokeigo/Pictures/PICS/CLOUDSCOSMOSPICS/image_4ab84d95-26ba-4806-9306
 # Build final distribution package
 echo "Building distribution package..."
 productbuild --distribution "$PKG_DIR/distribution.xml" \
-             --package-path "$PKG_DIR" \
+             --package-path "$PKG_DIR/CloudsCOSMOS.pkg" \
              --resources "$PKG_DIR/resources" \
-             "$INSTALLER_DIR/CloudsCOSMOS-v1.0.0-Mac.pkg"
+             "$INSTALLER_DIR/CloudsCOSMOS-v${VERSION}-Mac.pkg"
 
-echo "Installer created: $INSTALLER_DIR/CloudsCOSMOS-v1.0.0-Mac.pkg"
+echo "Installer created: $INSTALLER_DIR/CloudsCOSMOS-v${VERSION}-Mac.pkg"
 echo "Done!"

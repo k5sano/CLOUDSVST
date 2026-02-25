@@ -2,9 +2,8 @@
 
 #include <juce_core/juce_core.h>
 #include <cmath>
-#include <fstream>
-#include <mutex>
 
+// DebugProbe is only active in debug builds to avoid CPU overhead in release
 class DebugProbe
 {
 public:
@@ -13,6 +12,14 @@ public:
     void measureStereo(const float* L, const float* R, int numSamples,
                        int printInterval = 200)
     {
+#ifndef JUCE_DEBUG
+        // Release builds: completely disable to avoid CPU overhead
+        juce::ignoreUnused(L);
+        juce::ignoreUnused(R);
+        juce::ignoreUnused(numSamples);
+        juce::ignoreUnused(printInterval);
+        return;
+#else
         if (numSamples <= 0) return;
 
         float sum = 0.0f;
@@ -34,34 +41,15 @@ public:
                 + "  Peak=" + juce::String(lastPeak_, 6)
                 + "  (" + (lastPeak_ > 0.0001f ? "SIGNAL" : "SILENT") + ")";
 
-            // JUCE の DBG はデバッグ出力に送る（IDE のコンソール等）
             DBG(msg);
-
-            // ファイルにも書き出す（確実にログが残る）
-            writeToFile(msg);
         }
+#endif
     }
 
     float lastRms() const { return lastRms_; }
     float lastPeak() const { return lastPeak_; }
 
 private:
-    void writeToFile(const juce::String& msg)
-    {
-        static std::once_flag flag;
-        static juce::File logFile;
-        static std::mutex logMutex;
-        std::call_once(flag, [&]()
-        {
-            logFile = juce::File::getSpecialLocation(
-                juce::File::userDesktopDirectory).getChildFile("CloudsVST_debug.log");
-            // ファイルを空にする
-            logFile.replaceWithText("=== CloudsVST Debug Log ===\n");
-        });
-        std::lock_guard<std::mutex> lock(logMutex);
-        logFile.appendText(msg + "\n");
-    }
-
     const char* name_;
     float lastRms_ = 0.0f;
     float lastPeak_ = 0.0f;

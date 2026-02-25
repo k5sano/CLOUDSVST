@@ -43,7 +43,11 @@ void CloudsVSTProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     engine_.init();
     engine_.setMeterPointers(&meterD_, &meterE_);
     srcAdapter_.prepare(sampleRate, samplesPerBlock);
-    inputCopyBuffer_.setSize(2, samplesPerBlock);
+
+    // Allocate buffer with extra headroom to prevent reallocation in processBlock
+    // Most DAWs use blocks up to 2048 samples, so use 4096 as safety margin
+    const int maxBlockSize = samplesPerBlock * 2;
+    inputCopyBuffer_.setSize(2, maxBlockSize, false, true, false);
 }
 
 void CloudsVSTProcessor::releaseResources()
@@ -72,21 +76,43 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     if (numChannels < 2)
         return;
 
-    // [A] Input probe & meter
-    float peakA = 0.0f;
+    // --- Apply input gain and measure input (combined single pass) ---
+    const float gainDb = inputGainParam_->load();
+    const float gainLinear = std::pow(10.0f, gainDb / 20.0f);
+
+    float* inL = buffer.getWritePointer(0);
+    float* inR = buffer.getWritePointer(1);
+
+    float peakB = 0.0f;
+    if (std::abs(gainLinear - 1.0f) > 0.0001f)
     {
-        const float* inL = buffer.getReadPointer(0);
-        const float* inR = buffer.getReadPointer(1);
         for (int i = 0; i < numSamples; ++i)
         {
-            float absL = std::abs(inL[i]);
-            float absR = std::abs(inR[i]);
-            float v = (absL + absR) * 0.5f;
-            if (v > peakA) peakA = v;
+            inL[i] *= gainLinear;
+            inR[i] *= gainLinear;
+            float v = (std::abs(inL[i]) + std::abs(inR[i])) * 0.5f;
+            if (v > peakB) peakB = v;
         }
     }
-    meterA_.store(peakA, std::memory_order_relaxed);
+    else
+    {
+        // No gain needed, just measure
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float v = (std::abs(inL[i]) + std::abs(inR[i])) * 0.5f;
+            if (v > peakB) peakB = v;
+        }
+    }
+    meterB_.store(peakB, std::memory_order_relaxed);
+
+#if JUCE_DEBUG
+    // Debug probes only in debug builds
     probeA_.measureStereo(buffer.getReadPointer(0), buffer.getReadPointer(1), numSamples);
+    probeB_.measureStereo(buffer.getReadPointer(0), buffer.getReadPointer(1), numSamples);
+#else
+    juce::ignoreUnused(probeA_);
+    juce::ignoreUnused(probeB_);
+#endif
 
     // --- Read parameters and push to engine ---
     engine_.setPosition(positionParam_->load());
@@ -108,65 +134,35 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     if (triggerParam_->load() >= 0.5f)
         engine_.setTrigger(true);
 
-    // --- Apply input gain ---
-    const float gainDb = inputGainParam_->load();
-    const float gainLinear = std::pow(10.0f, gainDb / 20.0f);
-
-    if (std::abs(gainLinear - 1.0f) > 0.0001f)
-    {
-        buffer.applyGain(0, numSamples, gainLinear);
-    }
-
-    // [B] Post-gain probe & meter
-    float peakB = 0.0f;
-    {
-        const float* inL = buffer.getReadPointer(0);
-        const float* inR = buffer.getReadPointer(1);
-        for (int i = 0; i < numSamples; ++i)
-        {
-            float absL = std::abs(inL[i]);
-            float absR = std::abs(inR[i]);
-            float v = (absL + absR) * 0.5f;
-            if (v > peakB) peakB = v;
-        }
-    }
-    meterB_.store(peakB, std::memory_order_relaxed);
-    probeB_.measureStereo(buffer.getReadPointer(0), buffer.getReadPointer(1), numSamples);
-
-    // --- Avoid aliasing: copy input to separate buffer ---
-    if (inputCopyBuffer_.getNumSamples() < numSamples)
-        inputCopyBuffer_.setSize(2, numSamples, false, false, true);
+    // --- Avoid aliasing: copy input to separate buffer (no reallocation!) ---
+    // Note: Buffer size is fixed in prepareToPlay to prevent heap allocation
+    jassert(inputCopyBuffer_.getNumSamples() >= numSamples);
     inputCopyBuffer_.copyFrom(0, 0, buffer, 0, 0, numSamples);
     inputCopyBuffer_.copyFrom(1, 0, buffer, 1, 0, numSamples);
 
-    auto* inL  = inputCopyBuffer_.getReadPointer(0);
-    auto* inR  = inputCopyBuffer_.getReadPointer(1);
+    auto* procInL  = inputCopyBuffer_.getReadPointer(0);
+    auto* procInR  = inputCopyBuffer_.getReadPointer(1);
     auto* outL = buffer.getWritePointer(0);
     auto* outR = buffer.getWritePointer(1);
 
-    srcAdapter_.process(inL, inR, outL, outR, numSamples, engine_);
+    srcAdapter_.process(procInL, procInR, outL, outR, numSamples, engine_);
 
-    // Output safety clamp (adjustable limiter)
+    // --- Output safety clamp, metering, and Lissajous (combined single pass) ---
     const float limit = limiterParam_->load();
-    for (int ch = 0; ch < 2; ++ch)
-    {
-        auto* data = buffer.getWritePointer(ch);
-        for (int i = 0; i < numSamples; ++i)
-            data[i] = juce::jlimit(-limit, limit, data[i]);
-    }
-
-    // [F] Output probe & meter
     float peakF = 0.0f;
     int writePos = lissajousWritePos_.load(std::memory_order_relaxed);
 
     for (int i = 0; i < numSamples; ++i)
     {
-        float absL = std::abs(outL[i]);
-        float absR = std::abs(outR[i]);
-        float v = (absL + absR) * 0.5f;
+        // Clamp
+        outL[i] = juce::jlimit(-limit, limit, outL[i]);
+        outR[i] = juce::jlimit(-limit, limit, outR[i]);
+
+        // Meter
+        float v = (std::abs(outL[i]) + std::abs(outR[i])) * 0.5f;
         if (v > peakF) peakF = v;
 
-        // Write samples to Lissajous ring buffer (every 8th sample to save CPU)
+        // Lissajous (every 8th sample)
         if ((i & 7) == 0)
         {
             int idx = writePos % kLissajousSize;
@@ -177,7 +173,12 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     }
     meterF_.store(peakF, std::memory_order_relaxed);
     lissajousWritePos_.store(writePos, std::memory_order_relaxed);
+
+#if JUCE_DEBUG
     probeF_.measureStereo(outL, outR, numSamples);
+#else
+    juce::ignoreUnused(probeF_);
+#endif
 }
 
 //==============================================================================
