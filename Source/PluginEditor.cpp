@@ -10,7 +10,7 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
         backgroundImage_ = juce::ImageFileFormat::loadFrom(bgPath);
     }
 
-    setSize(900, 520);  // Expanded width for meters and new buttons
+    setSize(950, 520);  // Expanded width for meters and new buttons
 
     // Start timer for GUI updates (30fps)
     startTimerHz(30);
@@ -242,7 +242,7 @@ void CloudsVSTEditor::resized()
 
     area.removeFromTop(8);
 
-    // --- Row 3: Mode, Quality, Trigger, [BG Image, Save, Load on right] ---
+    // --- Row 3: Mode, Quality, Trigger ------------------------------------------------
     auto row3 = area.removeFromTop(40);
     row3.removeFromRight(50);
 
@@ -254,33 +254,34 @@ void CloudsVSTEditor::resized()
     row3.removeFromLeft(10);
     triggerButton_.setBounds(row3.removeFromLeft(60).reduced(2));
 
-    // Right side buttons (BG Image, Save, Load)
-    auto rightButtons = row3.removeFromRight(240);
-    loadImageButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
-    rightButtons.removeFromLeft(4);
-    savePresetButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
-    rightButtons.removeFromLeft(4);
-    loadPresetButton_.setBounds(rightButtons.removeFromLeft(75).reduced(2));
+    // Right side buttons (BG Image, Save, Load) - take from remaining space
+    int buttonWidth = 70;
+    int buttonSpacing = 4;
+    auto buttonsArea = row3.removeFromRight(buttonWidth * 3 + buttonSpacing * 2 + 10);
+    loadImageButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
+    buttonsArea.removeFromLeft(buttonSpacing);
+    savePresetButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
+    buttonsArea.removeFromLeft(buttonSpacing);
+    loadPresetButton_.setBounds(buttonsArea.removeFromLeft(buttonWidth).reduced(2));
 
     area.removeFromTop(8);
 
-    // --- Row 4: Engine gain staging + Freeze button ---
+    // --- Row 4: Engine gain staging + Freeze button ------------------------------------
     auto row4 = area.removeFromTop(knobH + labelH);
     row4.removeFromRight(50);
-    int trimSpacing = row4.getWidth() / 4;
+    int trimSpacing = row4.getWidth() / 5;  // 5 sections now
     inputTrimKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
     outputGainKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
 
-    // Limiter knob with Freeze button below
-    auto limiterArea = row4.removeFromLeft(trimSpacing);
-    limiterKnob_.setBounds(limiterArea.reduced(8, labelH));
+    // Limiter knob + Freeze button combo
+    auto limiterFreezeArea = row4.removeFromLeft(trimSpacing * 2);
+    limiterKnob_.setBounds(limiterFreezeArea.removeFromLeft(trimSpacing).reduced(8, labelH));
 
-    // Freeze button: square, orange, below limiter's value box
-    // Position it aligned with the bottom of the limiter's text box
-    int freezeSize = 44;
-    int limiterBoxBottom = limiterKnob_.getBounds().getBottom();
-    int limiterBoxRight = limiterKnob_.getBounds().getRight();
-    freezeButton_.setBounds(limiterBoxRight - freezeSize, limiterBoxBottom + 2, freezeSize, freezeSize);
+    // Freeze button: square, orange, next to limiter, aligned with value box
+    int freezeSize = 50;
+    int freezeY = limiterKnob_.getBounds().getBottom() - 10;
+    int freezeX = limiterFreezeArea.getX() + 20;
+    freezeButton_.setBounds(freezeX, freezeY, freezeSize, freezeSize);
 
     // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
     auto totalGainArea = getLocalBounds().reduced(10);
