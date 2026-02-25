@@ -1,0 +1,12 @@
+```json
+Copy{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "edit|create",
+        "command": "./scripts/fix-counter.sh"
+      }
+    ]
+  }
+}
+```
