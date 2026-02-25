@@ -2,8 +2,8 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "CloudsEngine.h"
-#include <vector>
 #include <cmath>
+#include <cstring>
 
 class SampleRateAdapter
 {
@@ -23,23 +23,18 @@ public:
 
 private:
     double hostSampleRate_ = 44100.0;
-    double ratio_ = 1.0;            // hostSR / internalSR
+    double ratio_ = 1.0;
 
-    // --- Input side: host → internal ---
-    // Fractional read position in host input, advances by ratio_ per internal sample
     double inputPhase_ = 0.0;
 
-    // Ring buffer for host input (stores recent host samples for interpolation)
     static constexpr int kInputRingSize = 8192;
     float inputRingL_[kInputRingSize] = {};
     float inputRingR_[kInputRingSize] = {};
     int inputWritePos_ = 0;
     int inputSamplesAvailable_ = 0;
 
-    // --- Output side: internal → host ---
     double outputPhase_ = 0.0;
 
-    // Ring buffer for engine output at internal rate
     static constexpr int kOutputRingSize = 8192;
     float outputRingL_[kOutputRingSize] = {};
     float outputRingR_[kOutputRingSize] = {};
@@ -47,13 +42,11 @@ private:
     int outputReadPos_ = 0;
     int outputSamplesAvailable_ = 0;
 
-    // Temp buffers for engine I/O (exactly kBlockSize)
     float engineInL_[kBlockSize] = {};
     float engineInR_[kBlockSize] = {};
     float engineOutL_[kBlockSize] = {};
     float engineOutR_[kBlockSize] = {};
 
-    // Hermite interpolation helper
     static inline float hermite(float xm1, float x0, float x1, float x2, float t)
     {
         float c = (x1 - xm1) * 0.5f;

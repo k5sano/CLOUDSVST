@@ -2,11 +2,8 @@
 
 #include <memory>
 #include <cstring>
-#include <atomic>
 #include <juce_core/juce_core.h>
-#include "DebugProbe.h"
 
-// Forward declaration — avoid pulling in full clouds headers here
 namespace clouds {
     class GranularProcessor;
 }
@@ -17,17 +14,13 @@ public:
     CloudsEngine();
     ~CloudsEngine();
 
-    /// Allocate buffers and initialise the GranularProcessor.
     void init();
 
-    /// Process exactly kBlockSize (32) stereo frames.
-    /// Input/output are interleaved L/R float pairs,
-    /// but this method accepts split channels for convenience.
     void process(const float* inputL, const float* inputR,
                  float* outputL, float* outputR,
                  int numSamples);
 
-    // --- Parameter setters (call before process) ---
+    // --- Parameter setters ---
     void setPosition(float v);
     void setSize(float v);
     void setPitch(float v);
@@ -39,11 +32,12 @@ public:
     void setReverb(float v);
     void setFreeze(bool v);
     void setTrigger(bool v);
-    void setPlaybackMode(int mode);   // 0-3
-    void setQuality(int quality);     // 0-3
+    void setQuality(int quality);
 
-    // Set atomic meter pointers for real-time GUI updates
-    void setMeterPointers(std::atomic<float>* d, std::atomic<float>* e);
+    void setPlaybackMode(int mode);
+
+    void setInputTrim(float v)  { inputTrim_ = v; }
+    void setOutputGain(float v) { outputGain_ = v; }
 
     static constexpr int kBlockSize = 32;
 
@@ -56,17 +50,9 @@ private:
     std::unique_ptr<clouds::GranularProcessor> processor_;
 
     bool initialised_ = false;
-
-    // Debug probes
-    DebugProbe probeD_{"D:Engine_In"};
-    DebugProbe probeE_{"E:Engine_Out"};
-
-    // Atomic meter pointers for GUI
-    std::atomic<float>* meterD_ = nullptr;
-    std::atomic<float>* meterE_ = nullptr;
-
-    // Stretch mode needs many Prepare() calls for correlator to converge
     int prepareCallsPerBlock_ = 1;
+    float inputTrim_ = 0.5f;
+    float outputGain_ = 1.6f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudsEngine)
 };

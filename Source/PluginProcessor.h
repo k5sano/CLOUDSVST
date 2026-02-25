@@ -39,7 +39,6 @@ public:
     // Meter values for GUI (atomic for lock-free read)
     std::atomic<float>& getMeterA() { return meterA_; }
     std::atomic<float>& getMeterB() { return meterB_; }
-    std::atomic<float>& getMeterC() { return meterC_; }
     std::atomic<float>& getMeterD() { return meterD_; }
     std::atomic<float>& getMeterE() { return meterE_; }
     std::atomic<float>& getMeterF() { return meterF_; }
@@ -64,6 +63,8 @@ private:
     std::atomic<float>* modeParam_         = nullptr;
     std::atomic<float>* qualityParam_      = nullptr;
     std::atomic<float>* inputGainParam_    = nullptr;
+    std::atomic<float>* inputTrimParam_    = nullptr;
+    std::atomic<float>* outputGainParam_   = nullptr;
 
     // Debug probes
     DebugProbe probeA_{"A:Input"};
@@ -74,7 +75,7 @@ private:
     juce::AudioBuffer<float> inputCopyBuffer_;
 
     // Real-time meter values (Peak level, 0.0 to 1.0)
-    std::atomic<float> meterA_{0.f}, meterB_{0.f}, meterC_{0.f},
+    std::atomic<float> meterA_{0.f}, meterB_{0.f},
                        meterD_{0.f}, meterE_{0.f}, meterF_{0.f};
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();

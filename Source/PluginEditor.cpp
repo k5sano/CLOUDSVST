@@ -81,7 +81,7 @@ void CloudsVSTEditor::timerCallback()
     // Read meter values from processor (atomic, lock-free)
     meterValues_[0] = processorRef_.getMeterA().load(std::memory_order_relaxed);
     meterValues_[1] = processorRef_.getMeterB().load(std::memory_order_relaxed);
-    meterValues_[2] = processorRef_.getMeterC().load(std::memory_order_relaxed);
+    meterValues_[2] = 0.0f;  // Meter C (SRC Down) - not implemented in simplified version
     meterValues_[3] = processorRef_.getMeterD().load(std::memory_order_relaxed);
     meterValues_[4] = processorRef_.getMeterE().load(std::memory_order_relaxed);
     meterValues_[5] = processorRef_.getMeterF().load(std::memory_order_relaxed);

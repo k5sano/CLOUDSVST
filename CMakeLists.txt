@@ -31,7 +31,7 @@ set(CLOUDS_DSP_SOURCES
 # --- Plugin target ---
 
 juce_add_plugin(CloudsVST
-    COMPANY_NAME "CloudsVST"
+    COMPANY_NAME "K5SANO"
     PLUGIN_MANUFACTURER_CODE Clds
     PLUGIN_CODE Cld1
     FORMATS VST3 AU Standalone

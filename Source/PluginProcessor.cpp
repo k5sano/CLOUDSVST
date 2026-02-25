@@ -28,6 +28,8 @@ CloudsVSTProcessor::CloudsVSTProcessor()
     modeParam_      = apvts_.getRawParameterValue("playback_mode");
     qualityParam_   = apvts_.getRawParameterValue("quality");
     inputGainParam_ = apvts_.getRawParameterValue("input_gain");
+    inputTrimParam_  = apvts_.getRawParameterValue("engine_input_trim");
+    outputGainParam_ = apvts_.getRawParameterValue("engine_output_gain");
 }
 
 CloudsVSTProcessor::~CloudsVSTProcessor()
@@ -40,9 +42,6 @@ void CloudsVSTProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     engine_.init();
     srcAdapter_.prepare(sampleRate, samplesPerBlock);
     inputCopyBuffer_.setSize(2, samplesPerBlock);
-
-    // Set meter pointers for real-time GUI updates
-    engine_.setMeterPointers(&meterD_, &meterE_);
 }
 
 void CloudsVSTProcessor::releaseResources()
@@ -100,6 +99,8 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     engine_.setFreeze(freezeParam_->load() >= 0.5f);
     engine_.setPlaybackMode(static_cast<int>(modeParam_->load()));
     engine_.setQuality(static_cast<int>(qualityParam_->load()));
+    engine_.setInputTrim(inputTrimParam_->load());
+    engine_.setOutputGain(outputGainParam_->load());
 
     // Handle trigger (momentary: set once, CloudsEngine resets after process)
     if (triggerParam_->load() >= 0.5f)

@@ -67,6 +67,15 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         juce::NormalisableRange<float>(-18.0f, 6.0f, 0.1f), 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
+    // --- Debug: Internal Gain Staging ---
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"engine_input_trim", 1}, "Engine Input Trim",
+        juce::NormalisableRange<float>(0.1f, 1.0f, 0.01f), 0.5f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"engine_output_gain", 1}, "Engine Output Gain",
+        juce::NormalisableRange<float>(0.5f, 3.0f, 0.01f), 1.6f));
+
     return { params.begin(), params.end() };
 }
 
