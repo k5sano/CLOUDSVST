@@ -27,7 +27,7 @@ private:
 
     double inputPhase_ = 0.0;
 
-    static constexpr int kInputRingSize = 8192;
+    static constexpr int kInputRingSize = 16384;
     float inputRingL_[kInputRingSize] = {};
     float inputRingR_[kInputRingSize] = {};
     int inputWritePos_ = 0;
@@ -35,7 +35,7 @@ private:
 
     double outputPhase_ = 0.0;
 
-    static constexpr int kOutputRingSize = 8192;
+    static constexpr int kOutputRingSize = 16384;
     float outputRingL_[kOutputRingSize] = {};
     float outputRingR_[kOutputRingSize] = {};
     int outputWritePos_ = 0;

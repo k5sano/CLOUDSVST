@@ -73,8 +73,10 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     // --- Engine gain staging knobs ---
     setupKnob(inputTrimKnob_,  inputTrimLabel_,  "Eng.Trim");
     setupKnob(outputGainKnob_, outputGainLabel_, "Eng.Gain");
+    setupKnob(limiterKnob_,    limiterLabel_,    "Limiter");
     inputTrimAtt_  = std::make_unique<SliderAttachment>(apvts, "engine_input_trim",  inputTrimKnob_);
     outputGainAtt_ = std::make_unique<SliderAttachment>(apvts, "engine_output_gain", outputGainKnob_);
+    limiterAtt_    = std::make_unique<SliderAttachment>(apvts, "output_limiter",    limiterKnob_);
 }
 
 CloudsVSTEditor::~CloudsVSTEditor()
@@ -146,7 +148,7 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsVST b010", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsVST b011", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Credit
@@ -231,6 +233,7 @@ void CloudsVSTEditor::resized()
     int trimSpacing = row4.getWidth() / 4;
     inputTrimKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
     outputGainKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
+    limiterKnob_.setBounds(row4.removeFromLeft(trimSpacing).reduced(8, labelH));
 
     // --- Input Gain slider (right side of controls, spanning rows 1-2) ---
     auto totalGainArea = getLocalBounds().reduced(10);

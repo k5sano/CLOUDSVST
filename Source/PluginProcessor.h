@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "CloudsVST b010"; }
+    const juce::String getName() const override { return "CloudsVST b011"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -65,6 +65,7 @@ private:
     std::atomic<float>* inputGainParam_    = nullptr;
     std::atomic<float>* inputTrimParam_    = nullptr;
     std::atomic<float>* outputGainParam_   = nullptr;
+    std::atomic<float>* limiterParam_      = nullptr;
 
     // Debug probes
     DebugProbe probeA_{"A:Input"};

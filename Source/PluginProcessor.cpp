@@ -30,6 +30,7 @@ CloudsVSTProcessor::CloudsVSTProcessor()
     inputGainParam_ = apvts_.getRawParameterValue("input_gain");
     inputTrimParam_  = apvts_.getRawParameterValue("engine_input_trim");
     outputGainParam_ = apvts_.getRawParameterValue("engine_output_gain");
+    limiterParam_    = apvts_.getRawParameterValue("output_limiter");
 }
 
 CloudsVSTProcessor::~CloudsVSTProcessor()
@@ -145,12 +146,13 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     srcAdapter_.process(inL, inR, outL, outR, numSamples, engine_);
 
-    // Output safety clamp
+    // Output safety clamp (adjustable limiter)
+    const float limit = limiterParam_->load();
     for (int ch = 0; ch < 2; ++ch)
     {
         auto* data = buffer.getWritePointer(ch);
         for (int i = 0; i < numSamples; ++i)
-            data[i] = juce::jlimit(-1.0f, 1.0f, data[i]);
+            data[i] = juce::jlimit(-limit, limit, data[i]);
     }
 
     // [F] Output probe & meter

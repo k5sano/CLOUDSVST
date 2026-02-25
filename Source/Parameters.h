@@ -76,6 +76,10 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         juce::ParameterID{"engine_output_gain", 1}, "Engine Output Gain",
         juce::NormalisableRange<float>(0.5f, 3.0f, 0.01f), 1.6f));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"output_limiter", 1}, "Output Limiter",
+        juce::NormalisableRange<float>(0.5f, 8.0f, 0.1f), 4.0f));
+
     return { params.begin(), params.end() };
 }
 
