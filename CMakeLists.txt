@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(CloudsVST VERSION 1.0.0 LANGUAGES C CXX)
+project(CloudsCOSMOS VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,12 +30,15 @@ set(CLOUDS_DSP_SOURCES
 
 # --- Plugin target ---
 
-juce_add_plugin(CloudsVST
+juce_add_plugin(CloudsCOSMOS
     COMPANY_NAME "K5SANO"
+    COMPANY_website "https://github.com/k5sano"
+    COMPANY_email "contact@k5sano.com"
     PLUGIN_MANUFACTURER_CODE Clds
     PLUGIN_CODE Cld1
     FORMATS VST3 AU Standalone
     PRODUCT_NAME "CloudsCOSMOS"
+    PLUGIN_DESCRIPTION "Granular Texture Synthesis"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -44,7 +47,7 @@ juce_add_plugin(CloudsVST
     COPY_PLUGIN_AFTER_BUILD TRUE
 )
 
-target_sources(CloudsVST
+target_sources(CloudsCOSMOS
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp
@@ -58,7 +61,7 @@ target_sources(CloudsVST
 # - libs/eurorack/ — provides clouds/dsp/*, clouds/resources.h
 # - libs/ — provides stmlib/stmlib.h via "stmlib/stmlib.h" includes
 
-target_include_directories(CloudsVST
+target_include_directories(CloudsCOSMOS
     PRIVATE
         Source/stubs
         Source
@@ -66,7 +69,7 @@ target_include_directories(CloudsVST
         libs
 )
 
-target_compile_definitions(CloudsVST
+target_compile_definitions(CloudsCOSMOS
     PRIVATE
         TEST=1
         JUCE_VST3_CAN_REPLACE_VST2=0
@@ -76,7 +79,7 @@ target_compile_definitions(CloudsVST
         JUCE_DISPLAY_SPLASH_SCREEN=0
 )
 
-target_link_libraries(CloudsVST
+target_link_libraries(CloudsCOSMOS
     PRIVATE
         juce::juce_audio_utils
         juce::juce_dsp
@@ -92,11 +95,11 @@ option(BUILD_TESTS "Build unit tests" ON)
 if(BUILD_TESTS)
     enable_testing()
 
-    juce_add_console_app(CloudsVSTTests
-        PRODUCT_NAME "CloudsVSTTests"
+    juce_add_console_app(CloudsCOSMOSTests
+        PRODUCT_NAME "CloudsCOSMOSTests"
     )
 
-    target_sources(CloudsVSTTests
+    target_sources(CloudsCOSMOSTests
         PRIVATE
             Tests/PluginTests.cpp
             Tests/AudioProcessingTests.cpp
@@ -107,7 +110,7 @@ if(BUILD_TESTS)
             ${CLOUDS_DSP_SOURCES}
     )
 
-    target_include_directories(CloudsVSTTests
+    target_include_directories(CloudsCOSMOSTests
         PRIVATE
             Source/stubs
             Source
@@ -115,16 +118,16 @@ if(BUILD_TESTS)
             libs
     )
 
-    target_compile_definitions(CloudsVSTTests
+    target_compile_definitions(CloudsCOSMOSTests
         PRIVATE
             TEST=1
     )
 
-    target_link_libraries(CloudsVSTTests
+    target_link_libraries(CloudsCOSMOSTests
         PRIVATE
             juce::juce_audio_utils
             juce::juce_dsp
     )
 
-    add_test(NAME CloudsVSTTests COMMAND CloudsVSTTests)
+    add_test(NAME CloudsCOSMOSTests COMMAND CloudsCOSMOSTests)
 endif()

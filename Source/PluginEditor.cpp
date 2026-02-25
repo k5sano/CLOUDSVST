@@ -10,7 +10,7 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
         backgroundImage_ = juce::ImageFileFormat::loadFrom(bgPath);
     }
 
-    setSize(800, 520);  // Expanded width for meters, height for Row 4
+    setSize(900, 520);  // Expanded width for meters and new buttons
 
     // Start timer for GUI updates (30fps)
     startTimerHz(30);
@@ -237,7 +237,7 @@ void CloudsVSTEditor::resized()
 
     area.removeFromTop(8);
 
-    // --- Row 3: Mode, Quality, Freeze, Trigger ---
+    // --- Row 3: Mode, Quality, Freeze, Trigger, BG Image, Save, Load ---
     auto row3 = area.removeFromTop(40);
     row3.removeFromRight(50);
 
@@ -247,16 +247,15 @@ void CloudsVSTEditor::resized()
     qualityLabel_.setBounds(row3.removeFromLeft(48));
     qualitySelector_.setBounds(row3.removeFromLeft(110).reduced(2));
     row3.removeFromLeft(10);
-    freezeButton_.setBounds(row3.removeFromLeft(70).reduced(2));
-    row3.removeFromLeft(6);
-    triggerButton_.setBounds(row3.removeFromLeft(70).reduced(2));
-    row3.removeFromLeft(6);
-    loadImageButton_.setBounds(row3.removeFromLeft(80).reduced(2));
-
-    // Reserve right side for preset buttons
-    auto presetArea = row3.removeFromRight(170);
-    loadPresetButton_.setBounds(presetArea.removeFromLeft(80).reduced(2));
-    savePresetButton_.setBounds(presetArea.removeFromLeft(80).reduced(2));
+    freezeButton_.setBounds(row3.removeFromLeft(60).reduced(2));
+    row3.removeFromLeft(4);
+    triggerButton_.setBounds(row3.removeFromLeft(60).reduced(2));
+    row3.removeFromLeft(4);
+    loadImageButton_.setBounds(row3.removeFromLeft(75).reduced(2));
+    row3.removeFromLeft(4);
+    savePresetButton_.setBounds(row3.removeFromLeft(55).reduced(2));
+    row3.removeFromLeft(4);
+    loadPresetButton_.setBounds(row3.removeFromLeft(55).reduced(2));
 
     area.removeFromTop(8);
 
