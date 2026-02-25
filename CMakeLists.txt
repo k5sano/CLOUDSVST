@@ -1,133 +1,92 @@
-cmake_minimum_required(VERSION 3.22)
-project(CloudsCOSMOS VERSION 1.0.0 LANGUAGES C CXX)
+```cmake
+Copycmake_minimum_required(VERSION 3.22)
+project(MetalCosmos VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(JUCE CONFIG REQUIRED)
 
-# --- Fetch JUCE ---
-
-include(FetchContent)
-FetchContent_Declare(JUCE
-    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG 8.0.12
-)
-FetchContent_MakeAvailable(JUCE)
-
-# --- Clouds DSP sources from eurorack submodule ---
-
-set(CLOUDS_DSP_SOURCES
-    libs/eurorack/clouds/dsp/granular_processor.cc
-    libs/eurorack/clouds/dsp/correlator.cc
-    libs/eurorack/clouds/dsp/mu_law.cc
-    libs/eurorack/clouds/dsp/pvoc/frame_transformation.cc
-    libs/eurorack/clouds/dsp/pvoc/phase_vocoder.cc
-    libs/eurorack/clouds/dsp/pvoc/stft.cc
-    libs/eurorack/clouds/resources.cc
-    libs/stmlib/dsp/atan.cc
-    libs/stmlib/dsp/units.cc
-    libs/stmlib/utils/random.cc
+juce_add_plugin(MetalCosmos
+    PLUGIN_MANUFACTURER_CODE K5sn
+    PLUGIN_CODE Mt2p
+    FORMATS VST3 Standalone
+    PRODUCT_NAME "MetalCosmos"
 )
 
-# --- Plugin target ---
+juce_generate_juce_header(MetalCosmos)
 
-juce_add_plugin(CloudsCOSMOS
-    COMPANY_NAME "K5SANO"
-    COMPANY_website "https://github.com/k5sano"
-    COMPANY_email "contact@k5sano.com"
-    PLUGIN_MANUFACTURER_CODE Clds
-    PLUGIN_CODE Cld1
-    FORMATS VST3 AU Standalone
-    PRODUCT_NAME "CloudsCOSMOS"
-    PLUGIN_DESCRIPTION "Granular Texture Synthesis"
-    IS_SYNTH FALSE
-    NEEDS_MIDI_INPUT FALSE
-    NEEDS_MIDI_OUTPUT FALSE
-    IS_MIDI_EFFECT FALSE
-    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+target_sources(MetalCosmos PRIVATE
+    Source/PluginProcessor.cpp
+    Source/PluginEditor.cpp
+    Source/DSP/DiodeFeedbackClipper.cpp
+    Source/DSP/DiodeMorpher.cpp
+    Source/DSP/OnePoleFilter.cpp
+    Source/DSP/BiquadFilter.cpp
+    Source/DSP/MT2GainStage.cpp
+    Source/DSP/MT2ToneStack.cpp
 )
 
-target_sources(CloudsCOSMOS
+target_include_directories(MetalCosmos PRIVATE
+    Source
+    Source/DSP
+    scaffold
+    scaffold/DSP
+)
+
+target_compile_features(MetalCosmos PRIVATE cxx_std_17)
+
+if(MSVC)
+    target_compile_definitions(MetalCosmos PRIVATE _USE_MATH_DEFINES)
+endif()
+
+target_link_libraries(MetalCosmos
     PRIVATE
-        Source/PluginProcessor.cpp
-        Source/PluginEditor.cpp
-        Source/CloudsEngine.cpp
-        Source/SampleRateAdapter.cpp
-        ${CLOUDS_DSP_SOURCES}
-)
-
-# Include paths:
-# - Source/stubs/ — provides clouds/drivers/debug_pin.h stub (searched FIRST)
-# - libs/eurorack/ — provides clouds/dsp/*, clouds/resources.h
-# - libs/ — provides stmlib/stmlib.h via "stmlib/stmlib.h" includes
-
-target_include_directories(CloudsCOSMOS
-    PRIVATE
-        Source/stubs
-        Source
-        libs/eurorack
-        libs
-)
-
-target_compile_definitions(CloudsCOSMOS
-    PRIVATE
-        TEST=1
-        JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
-    PUBLIC
-        JUCE_DISPLAY_SPLASH_SCREEN=0
-)
-
-target_link_libraries(CloudsCOSMOS
-    PRIVATE
-        juce::juce_audio_utils
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_audio_plugin_client
         juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
-        juce::juce_recommended_warning_flags
 )
 
-# --- Tests (optional) ---
-
+# --- Tests ---
 option(BUILD_TESTS "Build unit tests" ON)
-
 if(BUILD_TESTS)
     enable_testing()
 
-    juce_add_console_app(CloudsCOSMOSTests
-        PRODUCT_NAME "CloudsCOSMOSTests"
-    )
-
-    target_sources(CloudsCOSMOSTests
-        PRIVATE
-            Tests/PluginTests.cpp
-            Tests/AudioProcessingTests.cpp
-            Source/PluginProcessor.cpp
-            Source/PluginEditor.cpp
-            Source/CloudsEngine.cpp
-            Source/SampleRateAdapter.cpp
-            ${CLOUDS_DSP_SOURCES}
-    )
-
-    target_include_directories(CloudsCOSMOSTests
-        PRIVATE
-            Source/stubs
+    find_package(Catch2 3 QUIET)
+    if(Catch2_FOUND)
+        add_executable(MetalCosmosTests
+            tests/TestMain.cpp
+            tests/DiodeClipperTest.cpp
+            tests/DiodeMorpherTest.cpp
+            tests/ToneStackTest.cpp
+            tests/ParameterTest.cpp
+            Source/DSP/DiodeFeedbackClipper.cpp
+            Source/DSP/DiodeMorpher.cpp
+            Source/DSP/OnePoleFilter.cpp
+            Source/DSP/BiquadFilter.cpp
+            Source/DSP/MT2GainStage.cpp
+            Source/DSP/MT2ToneStack.cpp
+        )
+        target_include_directories(MetalCosmosTests PRIVATE
             Source
-            libs/eurorack
-            libs
-    )
-
-    target_compile_definitions(CloudsCOSMOSTests
-        PRIVATE
-            TEST=1
-    )
-
-    target_link_libraries(CloudsCOSMOSTests
-        PRIVATE
-            juce::juce_audio_utils
+            Source/DSP
+            scaffold
+            scaffold/DSP
+        )
+        target_compile_features(MetalCosmosTests PRIVATE cxx_std_17)
+        target_link_libraries(MetalCosmosTests PRIVATE
+            Catch2::Catch2WithMain
+            juce::juce_audio_basics
+            juce::juce_audio_processors
             juce::juce_dsp
-    )
+        )
+        if(MSVC)
+            target_compile_definitions(MetalCosmosTests PRIVATE _USE_MATH_DEFINES)
+        endif()
 
-    add_test(NAME CloudsCOSMOSTests COMMAND CloudsCOSMOSTests)
+        include(Catch2::Catch)
+        catch_discover_tests(MetalCosmosTests)
+    endif()
 endif()
+Copy
+```
