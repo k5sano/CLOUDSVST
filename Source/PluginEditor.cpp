@@ -182,13 +182,6 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
     g.drawText("CloudsCOSMOS b014", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
-    // Credit
-    g.setFont(10.0f);
-    g.setColour(juce::Colours::grey);
-    g.drawText("Based on Mutable Instruments Clouds by Emilie Gillet (MIT License)",
-               getLocalBounds().removeFromBottom(18),
-               juce::Justification::centred);
-
     // Draw signal meters on the right side
     const int meterWidth = 220;
     const int meterHeight = 20;
@@ -206,13 +199,20 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
     int lissajousY = meterYStart + meterSpacing * 6 + 10;
     int lissajousSize = 160;
     drawLissajous(g, getWidth() - 10 - lissajousSize - 10, lissajousY, lissajousSize, lissajousSize);
+
+    // Credit at bottom (subtle)
+    g.setFont(9.0f);
+    g.setColour(juce::Colour(80, 80, 100));  // Subtle grey
+    g.drawText("Based on Mutable Instruments Clouds by Émilie Gillet (MIT License)",
+               getLocalBounds().removeFromBottom(16),
+               juce::Justification::centred);
 }
 
 void CloudsVSTEditor::resized()
 {
     auto area = getLocalBounds().reduced(10);
     area.removeFromTop(30);  // Title
-    area.removeFromBottom(20);  // Credit
+    area.removeFromBottom(16);  // Credit
 
     // Reserve right side for meters
     area.removeFromRight(230);
