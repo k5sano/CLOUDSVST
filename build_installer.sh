@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudsCOSMOS Installer Build Script
+# CloudsVST Installer Build Script
 # Creates a .pkg installer for VST3 and AU plugins
 
 set -e
@@ -14,9 +14,9 @@ PKG_DIR="$INSTALLER_DIR/pkg"
 rm -rf "$INSTALLER_DIR"
 mkdir -p "$PKG_DIR"
 
-echo "Building CloudsCOSMOS..."
+echo "Building CloudsVST..."
 cd "$BUILD_DIR"
-cmake --build . --target CloudsCOSMOS_VST3 CloudsCOSMOS_AU CloudsCOSMOS_Standalone -j 8
+cmake --build . --target CloudsVST_VST3 CloudsVST_AU CloudsVST_Standalone -j 8
 
 echo "Creating installer package structure..."
 
@@ -26,32 +26,32 @@ mkdir -p "$PKG_DIR/root/Library/Audio/Plug-Ins/Components"
 mkdir -p "$PKG_DIR/root/Applications"
 
 # Copy built plugins
-cp -R "$BUILD_DIR/CloudsCOSMOS_artefacts/Debug/VST3/CloudsCOSMOS.vst3" \
+cp -R "$BUILD_DIR/CloudsVST_artefacts/Debug/VST3/CloudsVST.vst3" \
       "$PKG_DIR/root/Library/Audio/Plug-Ins/VST3/"
 
-cp -R "$BUILD_DIR/CloudsCOSMOS_artefacts/Debug/AU/CloudsCOSMOS.component" \
+cp -R "$BUILD_DIR/CloudsVST_artefacts/Debug/AU/CloudsVST.component" \
       "$PKG_DIR/root/Library/Audio/Plug-Ins/Components/"
 
 # Copy standalone app
-cp -R "$BUILD_DIR/CloudsCOSMOS_artefacts/Debug/Standalone/CloudsCOSMOS.app" \
+cp -R "$BUILD_DIR/CloudsVST_artefacts/Debug/Standalone/CloudsVST.app" \
       "$PKG_DIR/root/Applications/"
 
 # Copy background images to Documents
-mkdir -p "$PKG_DIR/root/Documents/CloudsCOSMOS"
+mkdir -p "$PKG_DIR/root/Documents/CloudsVST"
 cp /Users/sanokeigo/Pictures/PICS/CLOUDSCOSMOSPICS/*.png \
-   "$PKG_DIR/root/Documents/CloudsCOSMOS/"
+   "$PKG_DIR/root/Documents/CloudsVST/"
 
 # Create README
-cat > "$PKG_DIR/root/Documents/CloudsCOSMOS/README.txt" << 'EOF'
-CloudsCOSMOS v1.0.0
+cat > "$PKG_DIR/root/Documents/CloudsVST/README.txt" << 'EOF'
+CloudsVST v1.0.0
 Granular Texture Synthesis
 
 Based on Mutable Instruments Clouds by Émilie Gillet (MIT License)
 
 ## Installation
-- VST3: ~/Library/Audio/Plug-Ins/VST3/CloudsCOSMOS.vst3
-- AU: ~/Library/Audio/Plug-Ins/Components/CloudsCOSMOS.component
-- Standalone: /Applications/CloudsCOSMOS.app
+- VST3: ~/Library/Audio/Plug-Ins/VST3/CloudsVST.vst3
+- AU: ~/Library/Audio/Plug-Ins/Components/CloudsVST.component
+- Standalone: /Applications/CloudsVST.app
 
 ## Background Images
 The included background images can be loaded via the "BG Image" button.
@@ -79,25 +79,25 @@ EOF
 # Build component package
 echo "Building component package..."
 pkgbuild --root "$PKG_DIR/root" \
-         --identifier com.K5SANO.CloudsCOSMOS \
+         --identifier com.K5SANO.CloudsVST \
          --version "$VERSION" \
          --install-location / \
-         "$PKG_DIR/CloudsCOSMOS.pkg"
+         "$PKG_DIR/CloudsVST.pkg"
 
 # Create distribution XML
 cat > "$PKG_DIR/distribution.xml" << 'EOFX'
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="1">
-    <title>CloudsCOSMOS v0.0.14</title>
+    <title>CloudsVST v0.0.14</title>
     <background file="background.png" alignment="center" scaling="tofit"/>
     <options customize="allow" allow-external-scripts="false" rootVolumeOnly="true"/>
     <choices-outline>
-        <line choice="default">CloudsCOSMOS Complete Installation</line>
+        <line choice="default">CloudsVST Complete Installation</line>
     </choices-outline>
-    <choice id="default" title="Install CloudsCOSMOS" enabled="true" selected="true" visible="true" start_selected="true" start_enabled="true">
-        <pkg-ref id="com.K5SANO.CloudsCOSMOS"/>
+    <choice id="default" title="Install CloudsVST" enabled="true" selected="true" visible="true" start_selected="true" start_enabled="true">
+        <pkg-ref id="com.K5SANO.CloudsVST"/>
     </choice>
-    <pkg-ref id="com.K5SANO.CloudsCOSMOS" version="0.0.14" onConclusion="none">CloudsCOSMOS</pkg-ref>
+    <pkg-ref id="com.K5SANO.CloudsVST" version="0.0.14" onConclusion="none">CloudsVST</pkg-ref>
 </installer-gui-script>
 EOFX
 
@@ -112,9 +112,9 @@ h2 { color: #4a9eff; }
 </style>
 </head>
 <body>
-<h1>CloudsCOSMOS v1.0.0</h1>
+<h1>CloudsVST v1.0.0</h1>
 <h2>Granular Texture Synthesis</h2>
-<p>Welcome to CloudsCOSMOS! This plugin brings you the legendary Clouds granular processor by Mutable Instruments.</p>
+<p>Welcome to CloudsVST! This plugin brings you the legendary Clouds granular processor by Mutable Instruments.</p>
 <p><b>Features:</b></p>
 <ul>
 <li>4 playback modes: Granular, Stretch, Looping Delay, Spectral</li>
@@ -175,9 +175,9 @@ cp /Users/sanokeigo/Pictures/PICS/CLOUDSCOSMOSPICS/image_4ab84d95-26ba-4806-9306
 # Build final distribution package
 echo "Building distribution package..."
 productbuild --distribution "$PKG_DIR/distribution.xml" \
-             --package-path "$PKG_DIR/CloudsCOSMOS.pkg" \
+             --package-path "$PKG_DIR/CloudsVST.pkg" \
              --resources "$PKG_DIR/resources" \
-             "$INSTALLER_DIR/CloudsCOSMOS-v${VERSION}-Mac.pkg"
+             "$INSTALLER_DIR/CloudsVST-v${VERSION}-Mac.pkg"
 
-echo "Installer created: $INSTALLER_DIR/CloudsCOSMOS-v${VERSION}-Mac.pkg"
+echo "Installer created: $INSTALLER_DIR/CloudsVST-v${VERSION}-Mac.pkg"
 echo "Done!"

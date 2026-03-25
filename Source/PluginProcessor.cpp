@@ -31,6 +31,7 @@ CloudsVSTProcessor::CloudsVSTProcessor()
     inputTrimParam_  = apvts_.getRawParameterValue("engine_input_trim");
     outputGainParam_ = apvts_.getRawParameterValue("engine_output_gain");
     limiterParam_    = apvts_.getRawParameterValue("output_limiter");
+    liveModeParam_   = apvts_.getRawParameterValue("live_mode");
 }
 
 CloudsVSTProcessor::~CloudsVSTProcessor()
@@ -145,20 +146,41 @@ void CloudsVSTProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     auto* outL = buffer.getWritePointer(0);
     auto* outR = buffer.getWritePointer(1);
 
-    srcAdapter_.process(procInL, procInR, outL, outR, numSamples, engine_);
+    const bool liveMode = liveModeParam_->load() >= 0.5f;
+    srcAdapter_.process(procInL, procInR, outL, outR, numSamples, engine_, liveMode);
 
-    // --- Output safety clamp, metering, and Lissajous (combined single pass) ---
-    const float limit = limiterParam_->load();
+    // --- Peak limiter + metering + Lissajous (combined single pass) ---
+    const float threshold = limiterParam_->load();
+    const float attackCoeff = 0.001f;   // Fast attack
+    const float releaseCoeff = 0.0001f;  // Smooth release
+
     float peakF = 0.0f;
     int writePos = lissajousWritePos_.load(std::memory_order_relaxed);
 
     for (int i = 0; i < numSamples; ++i)
     {
-        // Clamp
-        outL[i] = juce::jlimit(-limit, limit, outL[i]);
-        outR[i] = juce::jlimit(-limit, limit, outR[i]);
+        // Peak detector (max of L/R)
+        float sampleMax = std::max(std::abs(outL[i]), std::abs(outR[i]));
 
-        // Meter
+        // Update envelope follower
+        if (sampleMax > limiterEnvelope_)
+            limiterEnvelope_ = sampleMax + (limiterEnvelope_ - sampleMax) * attackCoeff;
+        else
+            limiterEnvelope_ = limiterEnvelope_ + (0.0f - limiterEnvelope_) * releaseCoeff;
+
+        // Calculate gain reduction
+        float targetGain = 1.0f;
+        if (limiterEnvelope_ > threshold)
+            targetGain = threshold / limiterEnvelope_;
+
+        // Smooth gain transition
+        limiterGain_ = limiterGain_ + (targetGain - limiterGain_) * 0.01f;
+
+        // Apply gain reduction
+        outL[i] *= limiterGain_;
+        outR[i] *= limiterGain_;
+
+        // Meter (pre-limiting for visualization)
         float v = (std::abs(outL[i]) + std::abs(outR[i])) * 0.5f;
         if (v > peakF) peakF = v;
 

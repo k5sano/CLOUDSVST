@@ -32,6 +32,7 @@ private:
     // --- Buttons ---
     juce::TextButton freezeButton_{"Freeze"};
     juce::TextButton triggerButton_{"Trigger"};
+    juce::TextButton liveModeButton_{"Live Mode"};
     juce::TextButton loadImageButton_{"BG Image"};
     juce::TextButton savePresetButton_{"Save"};
     juce::TextButton loadPresetButton_{"Load"};
@@ -56,7 +57,7 @@ private:
         reverbAtt_;
     std::unique_ptr<SliderAttachment> inputTrimAtt_, outputGainAtt_, limiterAtt_;
     std::unique_ptr<SliderAttachment> inputGainAtt_;
-    std::unique_ptr<ButtonAttachment> freezeAtt_, triggerAtt_;
+    std::unique_ptr<ButtonAttachment> freezeAtt_, triggerAtt_, liveModeAtt_;
     std::unique_ptr<ComboBoxAttachment> modeAtt_, qualityAtt_;
 
     // Meter values (cached from processor)

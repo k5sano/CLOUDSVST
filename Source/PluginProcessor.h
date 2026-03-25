@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "CloudsCOSMOS b014"; }
+    const juce::String getName() const override { return "CloudsVST"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -53,6 +53,10 @@ public:
     std::atomic<float>& getLissajousR(int index) { return lissajousR_[index % kLissajousSize]; }
     std::atomic<int>& getLissajousWritePos() { return lissajousWritePos_; }
 
+    // True peak limiter state (simple envelope follower)
+    float limiterEnvelope_ = 0.0f;
+    float limiterGain_ = 1.0f;
+
 private:
     juce::AudioProcessorValueTreeState apvts_;
     CloudsEngine engine_;
@@ -76,6 +80,7 @@ private:
     std::atomic<float>* inputTrimParam_    = nullptr;
     std::atomic<float>* outputGainParam_   = nullptr;
     std::atomic<float>* limiterParam_      = nullptr;
+    std::atomic<float>* liveModeParam_     = nullptr;
 
     // Debug probes
     DebugProbe probeA_{"A:Input"};

@@ -28,10 +28,18 @@ void SampleRateAdapter::prepare(double hostSampleRate, int /*maxBlockSize*/)
 void SampleRateAdapter::process(const float* inL, const float* inR,
                                  float* outL, float* outR,
                                  int numSamples,
-                                 CloudsEngine& engine)
+                                 CloudsEngine& engine,
+                                 bool liveMode)
 {
     if (numSamples <= 0)
         return;
+
+    // Live mode: bypass SRC entirely for zero latency
+    if (liveMode)
+    {
+        engine.process(inL, inR, outL, outR, numSamples);
+        return;
+    }
 
     if (std::abs(hostSampleRate_ - kInternalSampleRate) < 1.0)
     {

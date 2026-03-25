@@ -80,6 +80,10 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         juce::ParameterID{"output_limiter", 1}, "Output Limiter",
         juce::NormalisableRange<float>(0.5f, 8.0f, 0.1f), 4.0f));
 
+    // --- Live Mode: Bypass SRC for direct processing ---
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"live_mode", 1}, "Live Mode", true));
+
     return { params.begin(), params.end() };
 }
 

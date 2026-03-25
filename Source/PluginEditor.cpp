@@ -48,6 +48,12 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     triggerButton_.setClickingTogglesState(false);
     addAndMakeVisible(triggerButton_);
 
+    // --- Live Mode button (Green) ---
+    liveModeButton_.setClickingTogglesState(true);
+    liveModeButton_.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0, 200, 100));
+    liveModeButton_.setColour(juce::TextButton::buttonColourId, juce::Colour(30, 60, 40));
+    addAndMakeVisible(liveModeButton_);
+
     // --- BG Image button ---
     loadImageButton_.onClick = [this] { loadBackgroundImage(); };
     addAndMakeVisible(loadImageButton_);
@@ -85,6 +91,7 @@ CloudsVSTEditor::CloudsVSTEditor(CloudsVSTProcessor& p)
     inputGainAtt_ = std::make_unique<SliderAttachment>(apvts, "input_gain",     inputGainSlider_);
     freezeAtt_    = std::make_unique<ButtonAttachment>(apvts, "freeze",         freezeButton_);
     triggerAtt_   = std::make_unique<ButtonAttachment>(apvts, "trigger",        triggerButton_);
+    liveModeAtt_  = std::make_unique<ButtonAttachment>(apvts, "live_mode",      liveModeButton_);
     modeAtt_      = std::make_unique<ComboBoxAttachment>(apvts, "playback_mode", modeSelector_);
     qualityAtt_   = std::make_unique<ComboBoxAttachment>(apvts, "quality",       qualitySelector_);
 
@@ -179,7 +186,7 @@ void CloudsVSTEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(18.0f);
-    g.drawText("CloudsCOSMOS b014", getLocalBounds().removeFromTop(30),
+    g.drawText("CloudsVST b021", getLocalBounds().removeFromTop(30),
                juce::Justification::centred);
 
     // Draw signal meters on the right side
@@ -260,9 +267,13 @@ void CloudsVSTEditor::resized()
     int buttonX = getLocalBounds().getWidth() - 10 - 230 - totalButtonWidth - 10;
 
     // Place buttons absolutely positioned
-    loadImageButton_.setBounds(buttonX, row3Full.getY() + 8, buttonWidth, 24);
-    savePresetButton_.setBounds(buttonX + buttonWidth + buttonSpacing, row3Full.getY() + 8, buttonWidth, 24);
-    loadPresetButton_.setBounds(buttonX + (buttonWidth + buttonSpacing) * 2, row3Full.getY() + 8, buttonWidth, 24);
+    int buttonY = row3Full.getY() + 8;
+    loadImageButton_.setBounds(buttonX, buttonY, buttonWidth, 24);
+    savePresetButton_.setBounds(buttonX + buttonWidth + buttonSpacing, buttonY, buttonWidth, 24);
+    loadPresetButton_.setBounds(buttonX + (buttonWidth + buttonSpacing) * 2, buttonY, buttonWidth, 24);
+
+    // Live Mode button: below Load, smaller
+    liveModeButton_.setBounds(buttonX + (buttonWidth + buttonSpacing) * 2, buttonY + 28, buttonWidth, 20);
 
     // Remaining area for controls
     auto row3 = row3Full.reduced(10);
@@ -292,7 +303,7 @@ void CloudsVSTEditor::resized()
     // Freeze button: 1.5x size, orange, next to limiter, bottom aligned with limiter's value box
     int freezeSize = 75;  // 50 * 1.5
     int limiterBoxBottom = limiterKnob_.getBounds().getBottom();
-    int freezeX = limiterFreezeArea.getX() + 15;
+    int freezeX = limiterFreezeArea.getX() + 5;
     int freezeY = limiterBoxBottom - freezeSize;  // Bottom aligned with value box
     freezeButton_.setBounds(freezeX, freezeY, freezeSize, freezeSize);
 
@@ -331,7 +342,7 @@ void CloudsVSTEditor::savePreset()
 {
     fileChooser_ = std::make_unique<juce::FileChooser>(
         "Save Preset",
-        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsCOSMOS.preset"),
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsVST.preset"),
         "*.preset");
 
     fileChooser_->launchAsync(juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
@@ -357,7 +368,7 @@ void CloudsVSTEditor::loadPreset()
 {
     fileChooser_ = std::make_unique<juce::FileChooser>(
         "Load Preset",
-        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsCOSMOS.preset"),
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CloudsVST.preset"),
         "*.preset");
 
     fileChooser_->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,

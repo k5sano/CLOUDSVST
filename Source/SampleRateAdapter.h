@@ -16,7 +16,8 @@ public:
     void process(const float* inL, const float* inR,
                  float* outL, float* outR,
                  int numSamples,
-                 CloudsEngine& engine);
+                 CloudsEngine& engine,
+                 bool liveMode = false);
 
     static constexpr double kInternalSampleRate = 32000.0;
     static constexpr int kBlockSize = 32;
@@ -27,7 +28,7 @@ private:
 
     double inputPhase_ = 0.0;
 
-    static constexpr int kInputRingSize = 16384;
+    static constexpr int kInputRingSize = 32768;
     float inputRingL_[kInputRingSize] = {};
     float inputRingR_[kInputRingSize] = {};
     int inputWritePos_ = 0;
@@ -35,7 +36,7 @@ private:
 
     double outputPhase_ = 0.0;
 
-    static constexpr int kOutputRingSize = 16384;
+    static constexpr int kOutputRingSize = 32768;
     float outputRingL_[kOutputRingSize] = {};
     float outputRingR_[kOutputRingSize] = {};
     int outputWritePos_ = 0;
